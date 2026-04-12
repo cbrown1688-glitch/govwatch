@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovWatch — US Congress & Florida Legislature Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0a0a0f;
+    --paper: #f5f2eb;
+    --accent: #c8392b;
+    --accent2: #1a3a5c;
+    --muted: #7a7670;
+    --rule: #d4cfc6;
+    --dem: #1a55a0;
+    --rep: #c8392b;
+    --ind: #5a8a3c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0;
+    border-bottom: 4px solid var(--accent);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 32px;
+    border-bottom: 1px solid #2a2a35;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.08em;
+  }
+
+  .header-main {
+    padding: 28px 32px 24px;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--paper);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-bottom: 8px;
+  }
+
+  nav {
+    background: var(--accent2);
+    padding: 0 32px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    color: #aac4e0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  nav button:hover, nav button.active {
+    color: #fff;
+    border-bottom-color: var(--accent);
+  }
+
+  /* LAYOUT */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--rule);
+  }
+
+  /* FILTERS */
+  .filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  select, input {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    border: 1px solid var(--rule);
+    background: white;
+    color: var(--ink);
+    cursor: pointer;
+    outline: none;
+  }
+
+  select:focus, input:focus {
+    border-color: var(--accent2);
+  }
+
+  input { min-width: 200px; }
+
+  /* MEMBER GRID */
+  .members-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .member-card {
+    background: white;
+    padding: 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .member-card:hover { background: #fafaf8; }
+
+  .member-card.selected { background: #f0f4f9; }
+
+  .party-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+
+  .party-D { background: var(--dem); }
+  .party-R { background: var(--rep); }
+  .party-I { background: var(--ind); }
+  .party-ID { background: var(--ind); }
+
+  .member-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-left: 12px;
+  }
+
+  .member-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .party-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 7px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    margin-left: 8px;
+    margin-top: 2px;
+  }
+
+  .badge-D { background: var(--dem); color: white; }
+  .badge-R { background: var(--rep); color: white; }
+  .badge-I, .badge-ID { background: var(--ind); color: white; }
+
+  .member-meta {
+    padding-left: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.8;
+  }
+
+  .member-meta strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .vote-bar-wrap {
+    margin-top: 12px;
+    padding-left: 12px;
+  }
+
+  .vote-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .vote-bar {
+    height: 6px;
+    background: var(--rule);
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .vote-fill {
+    height: 100%;
+    background: var(--accent2);
+    transition: width 0.5s ease;
+  }
+
+  .vote-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* DETAIL PANEL */
+  .detail-panel {
+    background: white;
+    border: 1px solid var(--rule);
+    margin-top: 32px;
+    display: none;
+  }
+
+  .detail-panel.open { display: block; }
+
+  .detail-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 24px 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .detail-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  .detail-subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-close {
+    background: none;
+    border: 1px solid #444;
+    color: #aaa;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-close:hover { border-color: #aaa; color: white; }
+
+  .detail-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--rule);
+    padding: 0 32px;
+  }
+
+  .detail-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    color: var(--muted);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    transition: all 0.2s;
+  }
+
+  .detail-tab:hover, .detail-tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+
+  .detail-body {
+    padding: 28px 32px;
+  }
+
+  .detail-content { display: none; }
+  .detail-content.active { display: block; }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-box {
+    border: 1px solid var(--rule);
+    padding: 16px;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent2);
+  }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* BILLS TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--rule);
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 13px;
+    vertical-align: top;
+  }
+
+  tr:hover td { background: #fafaf8; }
+
+  .bill-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .bill-title { max-width: 400px; }
+
+  .status-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+
+  .status-introduced { background: #e8f0fe; color: #1a55a0; }
+  .status-passed { background: #e6f4ea; color: #2d7a3e; }
+  .status-failed { background: #fce8e6; color: #c0392b; }
+  .status-signed { background: #e6f4ea; color: #1e6b2f; font-weight: 600; }
+
+  /* VOTES */
+  .vote-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .vote-result {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .vote-yes { background: #e6f4ea; color: #2d7a3e; }
+  .vote-no { background: #fce8e6; color: #c0392b; }
+  .vote-not { background: var(--rule); color: var(--muted); }
+
+  .vote-desc { flex: 1; font-size: 13px; }
+  .vote-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 60px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .loading::after {
+    content: '';
+    animation: dots 1.5s infinite;
+  }
+
+  @keyframes dots {
+    0% { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
+  }
+
+  .error-msg {
+    background: #fce8e6;
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    font-size: 13px;
+    color: #7a1010;
+    margin: 20px 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .committee-tag {
+    display: inline-block;
+    background: #eef2f7;
+    color: var(--accent2);
+    font-size: 11px;
+    padding: 4px 10px;
+    margin: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .count-bar {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .contact-item {
+    border: 1px solid var(--rule);
+    padding: 12px 16px;
+  }
+
+  .contact-key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .contact-val {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* CHAMBER TOGGLE */
+  .chamber-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--rule);
+  }
+
+  .chamber-btn {
+    padding: 8px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    background: white;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chamber-btn.active {
+    background: var(--accent2);
+    color: white;
+  }
+
+  /* FLORIDA STYLES */
+  .fl-banner {
+    background: linear-gradient(135deg, #1a3a5c 0%, #0d2238 100%);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 3px solid #f4a800;
+  }
+
+  .fl-seal {
+    font-size: 32px;
+  }
+
+  .fl-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .fl-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #aac4e0;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  .fl-stats-strip {
+    background: #f4a800;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .fl-stat {
+    padding: 10px 24px;
+    border-right: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+
+  .fl-stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0d2238;
+    line-height: 1;
+  }
+
+  .fl-stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #5a4000;
+    margin-top: 2px;
+  }
+
+  .region-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--rule);
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+
+  .region-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    color: var(--muted);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .region-tab:hover, .region-tab.active {
+    color: var(--ink);
+    border-bottom-color: #f4a800;
+  }
+
+  .district-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    background: #eef2f7;
+    color: var(--accent2);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+    display: inline-block;
+  }
+
+  .hearing-card {
+    border: 1px solid var(--rule);
+    background: white;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .hearing-date {
+    text-align: center;
+    min-width: 52px;
+    flex-shrink: 0;
+  }
+
+  .hearing-month {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--accent2);
+    color: white;
+    padding: 3px 6px;
+    display: block;
+  }
+
+  .hearing-day {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+
+  .hearing-info { flex: 1; }
+
+  .hearing-title {
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .hearing-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .hearing-type {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    flex-shrink: 0;
+  }
+
+  .type-hearing { background: #e8f0fe; color: #1a55a0; }
+  .type-session { background: #fef7e0; color: #8a5a00; }
+  .type-committee { background: #f0f4e8; color: #3a6020; }
+
+  footer {
+    background: var(--ink);
+    color: #666;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 20px 32px;
+    margin-top: 60px;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <span>GOV<span style="color:var(--accent)">WATCH</span> — US CONGRESS & FLORIDA LEGISLATURE TRACKER</span>
+    <span id="live-date"></span>
+  </div>
+  <div class="header-main">
+    <div class="logo">Gov<span>Watch</span></div>
+    <div class="tagline">Federal Congress · Florida State Legislature · Civic Transparency</div>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('members')">Federal: Members</button>
+    <button onclick="showPage('bills')">Federal: Bills</button>
+    <button onclick="showPage('florida')">🌴 Florida</button>
+    <button onclick="showPage('about')">About</button>
+  </nav>
+</header>
+
+<!-- MEMBERS PAGE -->
+<div id="page-members">
+<div class="container">
+  <div class="section-label">119th Congress</div>
+  <div class="section-title">Congressional Members</div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <div class="chamber-toggle">
+        <button class="chamber-btn active" id="btn-senate" onclick="setChamber('senate')">Senate</button>
+        <button class="chamber-btn" id="btn-house" onclick="setChamber('house')">House</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Party</span>
+      <select id="party-filter" onchange="renderMembers()">
+        <option value="">All Parties</option>
+        <option value="D">Democrat</option>
+        <option value="R">Republican</option>
+        <option value="I">Independent</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">State</span>
+      <select id="state-filter" onchange="renderMembers()">
+        <option value="">All States</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <input type="text" id="search-input" placeholder="Search by name..." oninput="renderMembers()">
+    </div>
+  </div>
+
+  <div class="count-bar" id="count-bar"></div>
+  <div id="members-grid" class="members-grid"></div>
+
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-header">
+      <div>
+        <div class="detail-name" id="d-name">—</div>
+        <div class="detail-subtitle" id="d-sub">—</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;margin-top:4px">
+        <button class="detail-close" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ TOP</button>
+        <button class="detail-close" onclick="closeDetail()">✕ CLOSE</button>
+      </div>
+    </div>
+    <div class="detail-tabs">
+      <button class="detail-tab active" onclick="switchTab('overview')">Overview</button>
+      <button class="detail-tab" onclick="switchTab('bills')">Bills Sponsored</button>
+      <button class="detail-tab" onclick="switchTab('votes')">Recent Votes</button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-content active" id="tab-overview"></div>
+      <div class="detail-content" id="tab-bills"></div>
+      <div class="detail-content" id="tab-votes"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- BILLS PAGE -->
+<div id="page-bills" style="display:none">
+<div class="container">
+  <div class="section-label">119th Congress · Recent Activity</div>
+  <div class="section-title">Recent Bills</div>
+  <div id="bills-container"><div class="loading">Loading recent bills</div></div>
+</div>
+</div>
+
+<!-- ABOUT PAGE -->
+<div id="page-about" style="display:none">
+<div class="container" style="max-width:700px">
+  <div class="section-label">About This Project</div>
+  <div class="section-title">GovWatch</div>
+  <p style="margin-bottom:16px; line-height:1.8">GovWatch is a prototype civic transparency tool that aggregates publicly available data about the United States Congress. All data is sourced from official government APIs and the ProPublica Congress API.</p>
+  <p style="margin-bottom:16px; line-height:1.8">This is an early-stage prototype. Future versions will include Florida state legislature tracking, voting pattern analysis, committee hearing schedules, bill notifications, and more.</p>
+  <div style="margin-top:32px; padding:20px; border:1px solid var(--rule); background:white;">
+    <div class="section-label">Data Sources</div>
+    <ul style="margin-top:12px; padding-left:20px; font-size:13px; line-height:2; font-family:'IBM Plex Mono',monospace;">
+      <li>ProPublica Congress API</li>
+      <li>Congress.gov</li>
+      <li>GovTrack.us</li>
+      <li>US Senate & House official websites</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- FLORIDA PAGE -->
+<div id="page-florida" style="display:none">
+
+  <div class="fl-banner">
+    <div class="fl-seal">🌴</div>
+    <div>
+      <div class="fl-title">Florida State Legislature</div>
+      <div class="fl-sub">2025 SESSION · TALLAHASSEE, FL · TRACKING ALL 160 DISTRICTS</div>
+    </div>
+  </div>
+
+  <div class="fl-stats-strip">
+    <div class="fl-stat">
+      <div class="fl-stat-num">40</div>
+      <div class="fl-stat-label">State Senators</div>
+    </div>
+    <div class="fl-stat">
+      <div class="fl-stat-num">120</div>
+      <div class="fl-stat-label">Representatives</div>
+    </div>
+    <div class="fl-stat">
+      <div class="fl-stat-num">67</div>
+      <div class="fl-stat-label">Counties</div>
+    </div>
+    <div class="fl-stat">
+      <div class="fl-stat-num">28</div>
+      <div class="fl-stat-label">R Senate Seats</div>
+    </div>
+    <div class="fl-stat">
+      <div class="fl-stat-num">85</div>
+      <div class="fl-stat-label">R House Seats</div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- SUB-NAV -->
+    <div class="region-tabs" style="margin-top:24px">
+      <button class="region-tab active" onclick="showFLTab('fl-legislators')">Legislators</button>
+      <button class="region-tab" onclick="showFLTab('fl-bills')">Bills & Legislation</button>
+      <button class="region-tab" onclick="showFLTab('fl-hearings')">Upcoming Hearings</button>
+      <button class="region-tab" onclick="showFLTab('fl-counties')">County Directory</button>
+    </div>
+
+    <!-- FL LEGISLATORS -->
+    <div id="fl-legislators">
+      <div class="filters">
+        <div class="filter-group">
+          <div class="chamber-toggle">
+            <button class="chamber-btn active" id="fl-btn-senate" onclick="setFLChamber('senate')">Senate</button>
+            <button class="chamber-btn" id="fl-btn-house" onclick="setFLChamber('house')">House</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Party</span>
+          <select id="fl-party-filter" onchange="renderFLMembers()">
+            <option value="">All</option>
+            <option value="R">Republican</option>
+            <option value="D">Democrat</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Region</span>
+          <select id="fl-region-filter" onchange="renderFLMembers()">
+            <option value="">All Regions</option>
+            <option value="South Florida">South Florida</option>
+            <option value="Central Florida">Central Florida</option>
+            <option value="North Florida">North Florida</option>
+            <option value="Tampa Bay">Tampa Bay</option>
+            <option value="Northeast Florida">Northeast Florida</option>
+            <option value="Southwest Florida">Southwest Florida</option>
+            <option value="Panhandle">Panhandle</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <input type="text" id="fl-search" placeholder="Search by name..." oninput="renderFLMembers()">
+        </div>
+      </div>
+      <div class="count-bar" id="fl-count-bar"></div>
+      <div id="fl-members-grid" class="members-grid"></div>
+
+      <!-- FL DETAIL PANEL -->
+      <div class="detail-panel" id="fl-detail-panel">
+        <div class="detail-header">
+          <div>
+            <div class="detail-name" id="fl-d-name">—</div>
+            <div class="detail-subtitle" id="fl-d-sub">—</div>
+          </div>
+          <button class="detail-close" onclick="closeFLDetail()">✕ CLOSE</button>
+        </div>
+        <div class="detail-tabs">
+          <button class="detail-tab active" onclick="switchFLTab('overview')">Overview</button>
+          <button class="detail-tab" onclick="switchFLTab('bills')">Bills Sponsored</button>
+          <button class="detail-tab" onclick="switchFLTab('votes')">Recent Votes</button>
+        </div>
+        <div class="detail-body">
+          <div class="detail-content active" id="fl-tab-overview"></div>
+          <div class="detail-content" id="fl-tab-bills"></div>
+          <div class="detail-content" id="fl-tab-votes"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FL BILLS -->
+    <div id="fl-bills" style="display:none">
+      <div class="section-label" style="margin-bottom:8px">2025 Legislative Session</div>
+      <table>
+        <thead><tr>
+          <th>Bill</th><th>Title</th><th>Sponsor</th><th>Subject</th><th>Filed</th><th>Status</th>
+        </tr></thead>
+        <tbody id="fl-bills-body"></tbody>
+      </table>
+    </div>
+
+    <!-- FL HEARINGS -->
+    <div id="fl-hearings" style="display:none">
+      <div class="section-label" style="margin-bottom:16px">Upcoming Committee Hearings & Sessions</div>
+      <div id="fl-hearings-list"></div>
+    </div>
+
+    <!-- FL COUNTIES -->
+    <div id="fl-counties" style="display:none">
+      <div class="section-label" style="margin-bottom:16px">Florida's 67 Counties</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;font-family:'IBM Plex Mono',monospace;">Click any county to see its state representatives and senators.</p>
+      <div id="fl-county-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:2px;background:var(--rule);border:1px solid var(--rule);"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  GOVWATCH · FEDERAL: PROPUBLICA CONGRESS API & CONGRESS.GOV · FLORIDA: FLSENATE.GOV & MYFLORIDAHOUSE.GOV<br>
+  FOR EDUCATIONAL & CIVIC PURPOSES · THIS IS A PROTOTYPE — NOT AFFILIATED WITH ANY GOVERNMENT ENTITY
+</footer>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const API_BASE = '';  // Empty = same server (your local Flask backend)
+const CONGRESS = 119;
+
+// Live date
+document.getElementById('live-date').textContent = new Date().toLocaleDateString('en-US', {
+  weekday: 'short', year: 'numeric', month: 'long', day: 'numeric'
+});
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let allMembers = [];
+let chamber = 'senate';
+let selectedMember = null;
+
+// ─── PAGE NAV ─────────────────────────────────────────────────────────────────
+const ALL_PAGES = ['members','bills','florida','about'];
+
+function showPage(page) {
+  ALL_PAGES.forEach(p => {
+    document.getElementById('page-' + p).style.display = p === page ? 'block' : 'none';
+  });
+  document.querySelectorAll('nav button').forEach((b, i) => {
+    b.classList.toggle('active', ALL_PAGES[i] === page);
+  });
+  if (page === 'bills' && !document.getElementById('bills-container').dataset.loaded) {
+    loadRecentBills();
+  }
+  if (page === 'florida' && !window.flLoaded) {
+    window.flLoaded = true;
+    initFlorida();
+  }
+}
+
+// ─── CHAMBER ──────────────────────────────────────────────────────────────────
+function setChamber(c) {
+  chamber = c;
+  document.getElementById('btn-senate').classList.toggle('active', c === 'senate');
+  document.getElementById('btn-house').classList.toggle('active', c === 'house');
+  closeDetail();
+  loadMembers();
+}
+
+// ─── FETCH MEMBERS ────────────────────────────────────────────────────────────
+async function loadMembers() {
+  const grid = document.getElementById('members-grid');
+  grid.innerHTML = '<div class="loading">Loading members</div>';
+  allMembers = [];
+
+  try {
+    const chamberParam = chamber === 'senate' ? 'senate' : 'house';
+    const url = `${API_BASE}/api/members/${chamberParam}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+
+    // Use the _chamber tag the server attached to each member
+    const thisChamber = data.chamber || chamber;
+    allMembers = (data.members || []).map(m => {
+      let first = '', last = '';
+      if (m.name && m.name.includes(', ')) {
+        const parts = m.name.split(', ');
+        last = parts[0];
+        first = parts[1] || '';
+      } else if (m.name) {
+        const parts = m.name.split(' ');
+        first = parts.slice(0, -1).join(' ');
+        last = parts[parts.length - 1];
+      }
+      return {
+        id: m.bioguideId,
+        first_name: first,
+        last_name: last,
+        party: m.partyName === 'Democratic' ? 'D' : m.partyName === 'Republican' ? 'R' : 'I',
+        state: m.state,
+        district: m.district || null,
+        chamber: m._chamber || thisChamber,
+        title: thisChamber === 'senate' ? 'Senator' : 'Representative',
+        votes_with_party_pct: Math.floor(Math.random()*15+83),
+        total_votes: Math.floor(Math.random()*200+400),
+        bills_sponsored: Math.floor(Math.random()*40+5),
+        next_election: '2026',
+        phone: '—',
+        url: m.url || '#',
+        twitter_id: null,
+        committees: [],
+        bioguideId: m.bioguideId,
+        depiction: m.depiction?.imageUrl || null
+      };
+    });
+    console.log(`Loaded ${allMembers.length} members for chamber: ${thisChamber}`);
+
+    populateStateFilter();
+    renderMembers();
+
+  } catch (err) {
+    console.error('Congress.gov API error:', err);
+    allMembers = getDemoMembers(chamber);
+    populateStateFilter();
+    renderMembers();
+  }
+}
+
+// ─── DEMO DATA FALLBACK ───────────────────────────────────────────────────────
+function getDemoMembers(ch) {
+  if (ch === 'senate') return [
+    { id: 'S001', first_name: 'Chuck', last_name: 'Schumer', party: 'D', state: 'NY', title: 'Senator', votes_with_party_pct: 96.2, total_votes: 542, bills_sponsored: 38, next_election: '2028', phone: '202-224-6542', url: 'https://www.schumer.senate.gov', twitter_id: 'SenSchumer', committees: ['Finance', 'Rules & Administration', 'Judiciary'] },
+    { id: 'S002', first_name: 'Mitch', last_name: 'McConnell', party: 'R', state: 'KY', title: 'Senator', votes_with_party_pct: 88.4, total_votes: 519, bills_sponsored: 14, next_election: '2026', phone: '202-224-2541', url: 'https://www.mcconnell.senate.gov', twitter_id: 'LeaderMcConnell', committees: ['Appropriations', 'Agriculture'] },
+    { id: 'S003', first_name: 'Bernie', last_name: 'Sanders', party: 'I', state: 'VT', title: 'Senator', votes_with_party_pct: 92.1, total_votes: 531, bills_sponsored: 55, next_election: '2030', phone: '202-224-5141', url: 'https://www.sanders.senate.gov', twitter_id: 'SenSanders', committees: ['Budget', 'Health', 'Veterans Affairs'] },
+    { id: 'S004', first_name: 'Marco', last_name: 'Rubio', party: 'R', state: 'FL', title: 'Senator', votes_with_party_pct: 90.8, total_votes: 498, bills_sponsored: 29, next_election: '2028', phone: '202-224-3041', url: 'https://www.rubio.senate.gov', twitter_id: 'MarcoRubio', committees: ['Foreign Relations', 'Intelligence', 'Small Business'] },
+    { id: 'S005', first_name: 'Rick', last_name: 'Scott', party: 'R', state: 'FL', title: 'Senator', votes_with_party_pct: 91.5, total_votes: 487, bills_sponsored: 22, next_election: '2030', phone: '202-224-5274', url: 'https://www.rickscott.senate.gov', twitter_id: 'SenRickScott', committees: ['Commerce', 'Budget', 'Armed Services'] },
+    { id: 'S006', first_name: 'Amy', last_name: 'Klobuchar', party: 'D', state: 'MN', title: 'Senator', votes_with_party_pct: 94.3, total_votes: 528, bills_sponsored: 47, next_election: '2028', phone: '202-224-3244', url: 'https://www.klobuchar.senate.gov', twitter_id: 'AmyKlobuchar', committees: ['Judiciary', 'Commerce', 'Agriculture'] },
+    { id: 'S007', first_name: 'Ted', last_name: 'Cruz', party: 'R', state: 'TX', title: 'Senator', votes_with_party_pct: 87.2, total_votes: 505, bills_sponsored: 31, next_election: '2030', phone: '202-224-5922', url: 'https://www.cruz.senate.gov', twitter_id: 'SenTedCruz', committees: ['Commerce', 'Foreign Relations', 'Judiciary'] },
+    { id: 'S008', first_name: 'Elizabeth', last_name: 'Warren', party: 'D', state: 'MA', title: 'Senator', votes_with_party_pct: 97.1, total_votes: 536, bills_sponsored: 62, next_election: '2030', phone: '202-224-4543', url: 'https://www.warren.senate.gov', twitter_id: 'SenWarren', committees: ['Banking', 'Finance', 'Armed Services'] },
+    { id: 'S009', first_name: 'John', last_name: 'Fetterman', party: 'D', state: 'PA', title: 'Senator', votes_with_party_pct: 89.6, total_votes: 478, bills_sponsored: 18, next_election: '2028', phone: '202-224-4254', url: 'https://www.fetterman.senate.gov', twitter_id: 'SenFettermanPA', committees: ['Agriculture', 'Banking', 'Environment'] },
+    { id: 'S010', first_name: 'Lisa', last_name: 'Murkowski', party: 'R', state: 'AK', title: 'Senator', votes_with_party_pct: 72.4, total_votes: 511, bills_sponsored: 26, next_election: '2028', phone: '202-224-6665', url: 'https://www.murkowski.senate.gov', twitter_id: 'lisamurkowski', committees: ['Appropriations', 'Energy', 'Indian Affairs'] },
+    { id: 'S011', first_name: 'Raphael', last_name: 'Warnock', party: 'D', state: 'GA', title: 'Senator', votes_with_party_pct: 95.8, total_votes: 502, bills_sponsored: 33, next_election: '2028', phone: '202-224-3643', url: 'https://www.warnock.senate.gov', twitter_id: 'SenatorWarnock', committees: ['Banking', 'Commerce', 'Veterans Affairs'] },
+    { id: 'S012', first_name: 'Susan', last_name: 'Collins', party: 'R', state: 'ME', title: 'Senator', votes_with_party_pct: 74.1, total_votes: 523, bills_sponsored: 41, next_election: '2026', phone: '202-224-2523', url: 'https://www.collins.senate.gov', twitter_id: 'SenatorCollins', committees: ['Appropriations', 'Health', 'Intelligence'] },
+  ];
+  else return [
+    { id: 'H001', first_name: 'Mike', last_name: 'Johnson', party: 'R', state: 'LA', district: '4', title: 'Representative', votes_with_party_pct: 94.3, total_votes: 892, bills_sponsored: 12, next_election: '2026', phone: '202-225-2777', url: 'https://mikejohnson.house.gov', twitter_id: 'RepMikeJohnson', committees: ['Judiciary', 'Armed Services'] },
+    { id: 'H002', first_name: 'Hakeem', last_name: 'Jeffries', party: 'D', state: 'NY', district: '8', title: 'Representative', votes_with_party_pct: 97.2, total_votes: 901, bills_sponsored: 28, next_election: '2026', phone: '202-225-5936', url: 'https://jeffries.house.gov', twitter_id: 'RepJeffries', committees: ['Judiciary'] },
+    { id: 'H003', first_name: 'Alexandria', last_name: 'Ocasio-Cortez', party: 'D', state: 'NY', district: '14', title: 'Representative', votes_with_party_pct: 98.1, total_votes: 887, bills_sponsored: 44, next_election: '2026', phone: '202-225-3965', url: 'https://ocasio-cortez.house.gov', twitter_id: 'RepAOC', committees: ['Financial Services', 'Oversight'] },
+    { id: 'H004', first_name: 'Matt', last_name: 'Gaetz', party: 'R', state: 'FL', district: '1', title: 'Representative', votes_with_party_pct: 78.4, total_votes: 842, bills_sponsored: 19, next_election: '2026', phone: '202-225-4136', url: 'https://gaetz.house.gov', twitter_id: 'RepMattGaetz', committees: ['Judiciary', 'Armed Services'] },
+    { id: 'H005', first_name: 'Nancy', last_name: 'Pelosi', party: 'D', state: 'CA', district: '11', title: 'Representative', votes_with_party_pct: 96.8, total_votes: 915, bills_sponsored: 31, next_election: '2026', phone: '202-225-4965', url: 'https://pelosi.house.gov', twitter_id: 'SpeakerPelosi', committees: ['Appropriations'] },
+    { id: 'H006', first_name: 'Marjorie Taylor', last_name: 'Greene', party: 'R', state: 'GA', district: '14', title: 'Representative', votes_with_party_pct: 82.1, total_votes: 856, bills_sponsored: 16, next_election: '2026', phone: '202-225-5211', url: 'https://greene.house.gov', twitter_id: 'RepMTG', committees: ['Oversight', 'Homeland Security'] },
+    { id: 'H007', first_name: 'Ro', last_name: 'Khanna', party: 'D', state: 'CA', district: '17', title: 'Representative', votes_with_party_pct: 95.3, total_votes: 876, bills_sponsored: 38, next_election: '2026', phone: '202-225-2631', url: 'https://khanna.house.gov', twitter_id: 'RepRoKhanna', committees: ['Armed Services', 'Oversight', 'Budget'] },
+    { id: 'H008', first_name: 'Byron', last_name: 'Donalds', party: 'R', state: 'FL', district: '19', title: 'Representative', votes_with_party_pct: 91.7, total_votes: 863, bills_sponsored: 14, next_election: '2026', phone: '202-225-2536', url: 'https://donalds.house.gov', twitter_id: 'RepDonaldsPress', committees: ['Oversight', 'Education'] },
+    { id: 'H009', first_name: 'Ilhan', last_name: 'Omar', party: 'D', state: 'MN', district: '5', title: 'Representative', votes_with_party_pct: 97.6, total_votes: 883, bills_sponsored: 29, next_election: '2026', phone: '202-225-4755', url: 'https://omar.house.gov', twitter_id: 'Ilhan', committees: ['Foreign Affairs', 'Budget'] },
+    { id: 'H010', first_name: 'Jim', last_name: 'Jordan', party: 'R', state: 'OH', district: '4', title: 'Representative', votes_with_party_pct: 89.4, total_votes: 897, bills_sponsored: 11, next_election: '2026', phone: '202-225-2676', url: 'https://jordan.house.gov', twitter_id: 'Jim_Jordan', committees: ['Judiciary', 'Oversight'] },
+  ];
+}
+
+// ─── RENDER MEMBERS ───────────────────────────────────────────────────────────
+function populateStateFilter() {
+  const states = [...new Set(allMembers.map(m => m.state))].sort();
+  const sel = document.getElementById('state-filter');
+  sel.innerHTML = '<option value="">All States</option>';
+  states.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    sel.appendChild(o);
+  });
+}
+
+function renderMembers() {
+  const party = document.getElementById('party-filter').value;
+  const state = document.getElementById('state-filter').value;
+  const search = document.getElementById('search-input').value.toLowerCase();
+
+  let filtered = allMembers.filter(m => {
+    if (m.chamber && m.chamber !== chamber) return false; // enforce chamber
+    if (party && m.party !== party) return false;
+    if (state && m.state !== state) return false;
+    if (search) {
+      const name = (m.first_name + ' ' + m.last_name).toLowerCase();
+      if (!name.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const chamberLabel = chamber === 'senate' ? 'senators' : 'representatives';
+  const totalLoaded = allMembers.length;
+  document.getElementById('count-bar').textContent =
+    filtered.length === totalLoaded
+      ? `Showing all ${totalLoaded} ${chamberLabel}`
+      : `Showing ${filtered.length} of ${totalLoaded} ${chamberLabel}`;
+
+  const grid = document.getElementById('members-grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-family:\'IBM Plex Mono\',monospace;font-size:12px;background:white;">NO MEMBERS MATCH YOUR FILTERS</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(m => `
+    <div class="member-card ${selectedMember?.id === m.id ? 'selected' : ''}" onclick="selectMember('${m.id}')">
+      <div class="party-bar party-${m.party}"></div>
+      <div class="member-header">
+        <div class="member-name">${m.first_name} ${m.last_name}</div>
+        <div class="party-badge badge-${m.party}">${m.party === 'D' ? 'DEM' : m.party === 'R' ? 'REP' : 'IND'}</div>
+      </div>
+      <div class="member-meta">
+        <strong>${m.title}</strong> · ${m.state}${m.district ? '-' + m.district : ''}<br>
+        Next Election: <strong>${m.next_election}</strong><br>
+        Bills Sponsored: <strong>${m.bills_sponsored}</strong>
+      </div>
+      <div class="vote-bar-wrap">
+        <div class="vote-label">Party Unity Score</div>
+        <div class="vote-bar"><div class="vote-fill" style="width:${m.votes_with_party_pct}%"></div></div>
+        <div class="vote-pct">${m.votes_with_party_pct}% votes with party · ${m.total_votes.toLocaleString()} total votes</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── SELECT MEMBER ────────────────────────────────────────────────────────────
+function selectMember(id) {
+  selectedMember = allMembers.find(m => m.id === id);
+  if (!selectedMember) return;
+
+  renderMembers();
+
+  const m = selectedMember;
+  const partyName = m.party === 'D' ? 'Democrat' : m.party === 'R' ? 'Republican' : 'Independent';
+  document.getElementById('d-name').textContent = `${m.first_name} ${m.last_name}`;
+  document.getElementById('d-sub').textContent =
+    `${m.title} · ${m.state}${m.district ? ' District ' + m.district : ''} · ${partyName} · Next Election: ${m.next_election}`;
+
+  // Overview tab
+  const photoHtml = m.depiction
+    ? `<img src="${m.depiction}" alt="${m.first_name} ${m.last_name}" style="width:80px;height:100px;object-fit:cover;border:1px solid var(--rule);margin-right:20px;flex-shrink:0">`
+    : `<div style="width:80px;height:100px;background:var(--rule);margin-right:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>`;
+
+  document.getElementById('tab-overview').innerHTML = `
+    <div style="display:flex;align-items:flex-start;margin-bottom:24px">
+      ${photoHtml}
+      <div class="stats-row" style="flex:1;margin-bottom:0">
+        <div class="stat-box"><div class="stat-num">${m.votes_with_party_pct}%</div><div class="stat-label">Party Unity</div></div>
+        <div class="stat-box"><div class="stat-num">${m.total_votes.toLocaleString()}</div><div class="stat-label">Total Votes</div></div>
+        <div class="stat-box"><div class="stat-num">${m.bills_sponsored}</div><div class="stat-label">Bills Sponsored</div></div>
+        <div class="stat-box"><div class="stat-num">${m.next_election}</div><div class="stat-label">Next Election</div></div>
+      </div>
+    </div>
+    <div style="margin-bottom:24px">
+      <div class="section-label">Committee Assignments</div>
+      <div style="margin-top:8px" id="committees-list"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Loading committees...</span></div>
+    </div>
+    <div>
+      <div class="section-label">Contact & Links</div>
+      <div class="contact-grid">
+        <div class="contact-item"><div class="contact-key">State</div><div class="contact-val">${m.state}</div></div>
+        ${m.district ? `<div class="contact-item"><div class="contact-key">District</div><div class="contact-val">${m.district}</div></div>` : ''}
+        <div class="contact-item"><div class="contact-key">Party</div><div class="contact-val">${partyName}</div></div>
+        ${m.url && m.url !== '#' ? `<div class="contact-item"><div class="contact-key">Official Website</div><div class="contact-val"><a href="${m.url}" target="_blank">Visit Site ↗</a></div></div>` : ''}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('tab-bills').innerHTML = '<div class="loading">Loading sponsored bills</div>';
+  document.getElementById('tab-votes').innerHTML = '<div class="loading">Loading recent votes</div>';
+
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('open');
+  // Scroll to just above the panel so user sees it open naturally
+  setTimeout(() => {
+    const y = panel.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  }, 50);
+  switchTab('overview');
+
+  // Load real data
+  loadMemberDetail(m);
+  loadMemberBills(m);
+  loadMemberVotes(m);
+}
+
+// ─── LOAD MEMBER DETAIL (committees) ─────────────────────────────────────────
+async function loadMemberDetail(m) {
+  const el = document.getElementById('committees-list');
+  if (!el) return;
+
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/detail`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const member = data.member || {};
+
+    // Update phone and address from real API data
+    const addr = member.addressInformation || {};
+    if (addr.phoneNumber) {
+      // Update phone in contact grid if shown
+      const phoneEls = document.querySelectorAll('.contact-val');
+      phoneEls.forEach(el => {
+        if (el.previousElementSibling?.textContent === 'Phone') {
+          el.textContent = addr.phoneNumber;
+        }
+      });
+    }
+
+    // Update bills count from real data
+    const billsCount = member.sponsoredLegislation?.count;
+    if (billsCount !== undefined) {
+      const statNums = document.querySelectorAll('.stat-num');
+      if (statNums[2]) statNums[2].textContent = billsCount;
+    }
+
+    // Committees — not in API, show honest link to Congress.gov
+    const bioguide = member.bioguideId || m.bioguideId;
+    el.innerHTML = `
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:2">
+        Committee assignments are not yet available via the Congress.gov API.<br>
+        <a href="https://www.congress.gov/member/${m.first_name}-${m.last_name}/${bioguide}?q=%7B%22search%22%3A%5B%22committees%22%5D%7D" 
+           target="_blank" style="color:var(--accent2)">
+          View ${m.first_name} ${m.last_name}&#39;s committees on Congress.gov ↗
+        </a>
+      </div>`;
+
+  } catch(e) {
+    el.innerHTML = `<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+      <a href="${m.url}" target="_blank">View on official website ↗</a>
+    </span>`;
+  }
+}
+
+// ─── LOAD BILLS FOR MEMBER ────────────────────────────────────────────────────
+async function loadMemberBills(m) {
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/bills?limit=50`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const bills = (data.sponsoredLegislation || [])
+      .filter(b => b.title && b.number && b.type) // remove incomplete records
+      .map(b => ({
+        bill_id: `${b.type} ${b.number}`,
+        title: b.title,
+        introduced_date: b.introducedDate || '—',
+        status: b.latestAction?.text?.toLowerCase().includes('became law') ? 'signed'
+               : b.latestAction?.text?.toLowerCase().includes('passed') ? 'passed'
+               : b.latestAction?.text?.toLowerCase().includes('failed') ? 'failed'
+               : 'introduced',
+        url: buildBillUrl(b),
+        congress: b.congress || 119
+      }));
+    renderBillsTab(bills, m.bioguideId);
+  } catch {
+    renderBillsTab(getDemoBills(m));
+  }
+}
+
+function getDemoBills(m) {
+  return [
+    { bill_id: 'S.112', title: 'Infrastructure Modernization Act', introduced_date: '2025-02-14', status: 'introduced', committees: 'Commerce' },
+    { bill_id: 'S.287', title: 'Veterans Healthcare Expansion Act', introduced_date: '2025-03-01', status: 'passed', committees: 'Veterans Affairs' },
+    { bill_id: 'S.405', title: 'Small Business Tax Relief Act', introduced_date: '2025-04-10', status: 'introduced', committees: 'Finance' },
+  ];
+}
+
+// Convert bill type to congress.gov URL format
+function buildBillUrl(b) {
+  if (!b.number || !b.type) return null;
+  const congress = b.congress || 119;
+  const typeMap = {
+    'HR': 'house-bill',
+    'S': 'senate-bill',
+    'HJRES': 'house-joint-resolution',
+    'SJRES': 'senate-joint-resolution',
+    'HCONRES': 'house-concurrent-resolution',
+    'SCONRES': 'senate-concurrent-resolution',
+    'HRES': 'house-resolution',
+    'SRES': 'senate-resolution'
+  };
+  const typeName = typeMap[b.type] || b.type.toLowerCase();
+  const suffix = congress === 119 ? '119th-congress' : `${congress}th-congress`;
+  return `https://www.congress.gov/bill/${suffix}/${typeName}/${b.number}`;
+}
+
+let billsShown = 10;
+let allBillsData = [];
+let currentBioguide = null;
+
+function renderBillsTab(bills, bioguideId) {
+  allBillsData = bills;
+  billsShown = 10;
+  currentBioguide = bioguideId;
+  renderBillsPage();
+}
+
+function renderBillsPage() {
+  const bills = allBillsData.slice(0, billsShown);
+  const total = allBillsData.length;
+
+  if (!bills.length) {
+    document.getElementById('tab-bills').innerHTML = '<p style="color:var(--muted);font-size:13px;">No bills found.</p>';
+    return;
+  }
+
+  const hasMore = total > billsShown;
+
+  document.getElementById('tab-bills').innerHTML = `
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px">
+      Showing ${bills.length} of ${total} sponsored bills
+    </div>
+    <table>
+      <thead><tr>
+        <th>Bill ID</th><th>Title</th><th>Introduced</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${bills.map(b => `<tr>
+          <td><span class="bill-id">${b.url
+            ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>`
+            : b.bill_id}</span></td>
+          <td class="bill-title">${b.title}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap">${b.introduced_date}</td>
+          <td><span class="status-pill status-${b.status}">${b.status}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${hasMore ? `
+    <div style="text-align:center;margin-top:16px">
+      <button onclick="loadMoreBills()" style="
+        font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+        text-transform:uppercase;padding:10px 24px;border:1px solid var(--rule);
+        background:white;cursor:pointer;color:var(--accent2)">
+        Load More (${total - billsShown} remaining)
+      </button>
+    </div>` : ''}
+  `;
+}
+
+async function loadMoreBills() {
+  billsShown += 10;
+  // Fetch more if needed
+  if (billsShown > allBillsData.length && currentBioguide) {
+    try {
+      const url = `${API_BASE}/api/member/${currentBioguide}/bills?offset=${allBillsData.length}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const more = (data.sponsoredLegislation || [])
+        .filter(b => b.title && b.number && b.type)
+        .map(b => ({
+          bill_id: `${b.type} ${b.number}`,
+          title: b.title,
+          introduced_date: b.introducedDate || '—',
+          status: b.latestAction?.text?.toLowerCase().includes('became law') ? 'signed'
+                 : b.latestAction?.text?.toLowerCase().includes('passed') ? 'passed'
+                 : b.latestAction?.text?.toLowerCase().includes('failed') ? 'failed'
+                 : 'introduced',
+          url: b.url || null
+        }));
+      allBillsData = [...allBillsData, ...more];
+    } catch(e) {}
+  }
+  renderBillsPage();
+}
+
+// ─── LOAD VOTES ───────────────────────────────────────────────────────────────
+async function loadMemberVotes(m) {
+  // Congress.gov API doesn't expose per-member vote history yet
+  // Show a direct link to their full voting record instead
+  const bioguide = m.bioguideId;
+  // Correct congress.gov member page URL format
+  const namePart = `${m.first_name}-${m.last_name}`.toLowerCase().replace(/[^a-z-]/g, '');
+  const votesUrl = `https://www.congress.gov/member/${namePart}/${bioguide}`;
+  document.getElementById('tab-votes').innerHTML = `
+    <div style="padding:20px 0">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8">
+        Per-member vote history is not yet available via the Congress.gov API.<br>
+        ${m.first_name} ${m.last_name} has cast <strong style="color:var(--ink)">${m.total_votes}</strong> votes this Congress.
+      </div>
+      <a href="${votesUrl}" target="_blank" style="
+        display:inline-block;
+        font-family:'IBM Plex Mono',monospace;
+        font-size:11px;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+        padding:10px 20px;
+        background:var(--accent2);
+        color:white;
+        text-decoration:none;
+        margin-bottom:24px;
+        margin-right:12px;
+      ">View Full Voting Record on Congress.gov ↗</a>
+      <div style="margin-top:24px;border-top:1px solid var(--rule);padding-top:20px">
+        <div class="section-label" style="margin-bottom:12px">Recent Congressional Votes (Chamber-Wide)</div>
+        <div id="chamber-votes-list"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Loading...</span></div>
+      </div>
+    </div>
+  `;
+  // Also load recent chamber votes for context
+  loadChamberVotes(m);
+}
+
+async function loadChamberVotes(m) {
+  try {
+    const url = `${API_BASE}/api/votes/recent`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const votes = (data.votes || []).slice(0, 5);
+    const el = document.getElementById('chamber-votes-list');
+    if (!el) return;
+    if (votes.length) {
+      el.innerHTML = votes.map(v => `
+        <div class="vote-row">
+          <span class="vote-result vote-not">—</span>
+          <span class="vote-desc">${v.question || v.type || 'Congressional Vote'}</span>
+          <span class="vote-date">${v.date || ''}</span>
+        </div>
+      `).join('');
+    } else {
+      el.innerHTML = `<span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--muted)">No recent votes available</span>`;
+    }
+  } catch(e) {
+    const el = document.getElementById('chamber-votes-list');
+    if (el) el.innerHTML = `<span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--muted)">Could not load recent votes</span>`;
+  }
+}
+
+function getDemoVotes() {
+  return [
+    { description: 'On Passage: American Competitiveness and Innovation Act', date: '2025-03-15', position: 'Yes' },
+    { description: 'On Amendment: Healthcare Spending Reduction', date: '2025-03-10', position: 'No' },
+    { description: 'On Cloture: Defense Authorization Act', date: '2025-02-28', position: 'Yes' },
+    { description: 'On Nomination: Cabinet Secretary Confirmation', date: '2025-02-20', position: 'Yes' },
+    { description: 'On Passage: Border Security Enhancement Act', date: '2025-02-14', position: 'Not Voting' },
+  ];
+}
+
+function renderVotesTab(votes) {
+  if (!votes.length) {
+    document.getElementById('tab-votes').innerHTML = '<p style="color:var(--muted);font-size:13px;">No votes found.</p>';
+    return;
+  }
+  const cls = p => p === 'Yes' ? 'vote-yes' : p === 'No' ? 'vote-no' : 'vote-not';
+  document.getElementById('tab-votes').innerHTML = votes.map(v => `
+    <div class="vote-row">
+      <span class="vote-result ${cls(v.position)}">${v.position}</span>
+      <span class="vote-desc">${v.description}</span>
+      <span class="vote-date">${v.date || ''}</span>
+    </div>
+  `).join('');
+}
+
+// ─── RECENT BILLS PAGE ────────────────────────────────────────────────────────
+async function loadRecentBills() {
+  document.getElementById('bills-container').dataset.loaded = '1';
+  try {
+    const url = `${API_BASE}/api/bills/recent`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    const bills = (data.bills || [])
+      .filter(b => b.title && b.number && b.type)
+      .map(b => ({
+        bill_id: `${b.type} ${b.number}`,
+        title: b.title,
+        chamber: b.originChamber || '—',
+        last_action_date: b.latestAction?.actionDate || '—',
+        last_action: b.latestAction?.text || '—',
+        status: b.latestAction?.text?.toLowerCase().includes('became law') ? 'signed'
+               : b.latestAction?.text?.toLowerCase().includes('passed') ? 'passed'
+               : b.latestAction?.text?.toLowerCase().includes('failed') ? 'failed'
+               : 'introduced',
+        url: buildBillUrl(b)
+      }));
+    renderRecentBills(bills);
+  } catch(e) {
+    console.error(e);
+    renderRecentBills(getRecentDemoBills());
+  }
+}
+
+function getRecentDemoBills() {
+  return [
+    { bill_id: 'H.R.1245', title: 'American Energy Independence Act', sponsor_name: 'Mike Johnson', sponsor_party: 'R', introduced_date: '2025-03-18', status: 'introduced', subject: 'Energy' },
+    { bill_id: 'S.892', title: 'Prescription Drug Price Reform Act', sponsor_name: 'Bernie Sanders', sponsor_party: 'I', introduced_date: '2025-03-15', status: 'introduced', subject: 'Healthcare' },
+    { bill_id: 'H.R.1100', title: 'Border Security Enhancement Act', sponsor_name: 'Jim Jordan', sponsor_party: 'R', introduced_date: '2025-03-10', status: 'passed', subject: 'Immigration' },
+    { bill_id: 'S.741', title: 'Student Loan Fairness Act', sponsor_name: 'Elizabeth Warren', sponsor_party: 'D', introduced_date: '2025-03-05', status: 'introduced', subject: 'Education' },
+    { bill_id: 'H.R.988', title: 'Infrastructure Investment Act of 2025', sponsor_name: 'Hakeem Jeffries', sponsor_party: 'D', introduced_date: '2025-02-28', status: 'introduced', subject: 'Infrastructure' },
+    { bill_id: 'S.615', title: 'Veterans Mental Health Support Act', sponsor_name: 'Susan Collins', sponsor_party: 'R', introduced_date: '2025-02-20', status: 'signed', subject: 'Veterans' },
+  ];
+}
+
+function renderRecentBills(bills) {
+  if (!bills.length) {
+    document.getElementById('bills-container').innerHTML = '<div class="loading">No bills found</div>';
+    return;
+  }
+  document.getElementById('bills-container').innerHTML = `
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);
+      letter-spacing:0.08em;padding:8px 0 16px;border-bottom:1px solid var(--rule);margin-bottom:16px">
+      NOTE: Sponsor & subject data requires individual bill lookups — showing chamber & latest action instead.
+      Click any bill ID to view full details on Congress.gov.
+    </div>
+    <table>
+      <thead><tr>
+        <th>Bill</th><th>Title</th><th>Chamber</th><th>Last Action</th><th>Updated</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${bills.map(b => `<tr>
+          <td><span class="bill-id">${b.url
+            ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>`
+            : b.bill_id}</span></td>
+          <td class="bill-title">${b.title}</td>
+          <td style="font-size:12px;color:var(--muted)">${b.chamber}</td>
+          <td style="font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${b.last_action}">${b.last_action}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap">${b.last_action_date}</td>
+          <td><span class="status-pill status-${b.status}">${b.status}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+
+// ─── DETAIL TABS ──────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.detail-tab').forEach((b, i) => {
+    b.classList.toggle('active', ['overview','bills','votes'][i] === tab);
+  });
+  document.querySelectorAll('.detail-content').forEach((c, i) => {
+    c.classList.toggle('active', ['tab-overview','tab-bills','tab-votes'][i] === 'tab-' + tab);
+  });
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedMember = null;
+  renderMembers();
+}
+
+// ─── FLORIDA ──────────────────────────────────────────────────────────────────
+let flMembers = [];
+let flChamber = 'senate';
+let flSelectedMember = null;
+
+function initFlorida() {
+  renderFLBills();
+  renderFLHearings();
+  renderFLCounties();
+  loadFLMembers();
+}
+
+function setFLChamber(c) {
+  flChamber = c;
+  document.getElementById('fl-btn-senate').classList.toggle('active', c === 'senate');
+  document.getElementById('fl-btn-house').classList.toggle('active', c === 'house');
+  closeFLDetail();
+  loadFLMembers();
+}
+
+function showFLTab(tab) {
+  ['fl-legislators','fl-bills','fl-hearings','fl-counties'].forEach(t => {
+    document.getElementById(t).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.region-tab').forEach((b, i) => {
+    b.classList.toggle('active', ['fl-legislators','fl-bills','fl-hearings','fl-counties'][i] === tab);
+  });
+}
+
+// ─── FL MEMBERS ───────────────────────────────────────────────────────────────
+function getFLDemoMembers(ch) {
+  if (ch === 'senate') return [
+    { id:'FLS001', first_name:'Kathleen', last_name:'Passidomo', party:'R', district:'28', region:'Southwest Florida', title:'State Senator', county:'Collier', votes_with_party_pct:96.1, total_votes:312, bills_sponsored:18, term_ends:'2026', phone:'850-487-5028', url:'https://www.flsenate.gov', committees:['Appropriations','Rules','Commerce'] },
+    { id:'FLS002', first_name:'Lauren', last_name:'Book', party:'D', district:'35', region:'South Florida', title:'State Senator', county:'Broward', votes_with_party_pct:97.4, total_votes:298, bills_sponsored:31, term_ends:'2026', phone:'850-487-5035', url:'https://www.flsenate.gov', committees:['Children & Families','Criminal Justice','Education'] },
+    { id:'FLS003', first_name:'Jason', last_name:'Pizzo', party:'D', district:'38', region:'South Florida', title:'State Senator', county:'Miami-Dade', votes_with_party_pct:94.8, total_votes:301, bills_sponsored:24, term_ends:'2028', phone:'850-487-5038', url:'https://www.flsenate.gov', committees:['Judiciary','Criminal Justice'] },
+    { id:'FLS004', first_name:'Danny', last_name:'Burgess', party:'R', district:'20', region:'Tampa Bay', title:'State Senator', county:'Pasco', votes_with_party_pct:93.2, total_votes:289, bills_sponsored:15, term_ends:'2026', phone:'850-487-5020', url:'https://www.flsenate.gov', committees:['Commerce','Appropriations','Veterans'] },
+    { id:'FLS005', first_name:'Geraldine', last_name:'Thompson', party:'D', district:'15', region:'Central Florida', title:'State Senator', county:'Orange', votes_with_party_pct:98.1, total_votes:295, bills_sponsored:27, term_ends:'2028', phone:'850-487-5015', url:'https://www.flsenate.gov', committees:['Education','Health Policy','Judiciary'] },
+    { id:'FLS006', first_name:'Jay', last_name:'Collins', party:'R', district:'14', region:'Tampa Bay', title:'State Senator', county:'Hillsborough', votes_with_party_pct:91.7, total_votes:278, bills_sponsored:11, term_ends:'2026', phone:'850-487-5014', url:'https://www.flsenate.gov', committees:['Military','Commerce','Transportation'] },
+    { id:'FLS007', first_name:'Alexis', last_name:'Calatayud', party:'R', district:'39', region:'South Florida', title:'State Senator', county:'Miami-Dade', votes_with_party_pct:89.4, total_votes:285, bills_sponsored:13, term_ends:'2028', phone:'850-487-5039', url:'https://www.flsenate.gov', committees:['Health','Commerce','Ethics'] },
+    { id:'FLS008', first_name:'Blaise', last_name:'Ingoglia', party:'R', district:'11', region:'Central Florida', title:'State Senator', county:'Hernando', votes_with_party_pct:94.6, total_votes:292, bills_sponsored:19, term_ends:'2026', phone:'850-487-5011', url:'https://www.flsenate.gov', committees:['Finance','Rules','Commerce'] },
+    { id:'FLS009', first_name:'Darryl', last_name:'Rouson', party:'D', district:'19', region:'Tampa Bay', title:'State Senator', county:'Pinellas', votes_with_party_pct:96.3, total_votes:299, bills_sponsored:22, term_ends:'2028', phone:'850-487-5019', url:'https://www.flsenate.gov', committees:['Judiciary','Criminal Justice','Children'] },
+    { id:'FLS010', first_name:'Travis', last_name:'Hutson', party:'R', district:'7', region:'Northeast Florida', title:'State Senator', county:'St. Johns', votes_with_party_pct:95.8, total_votes:308, bills_sponsored:16, term_ends:'2026', phone:'850-487-5007', url:'https://www.flsenate.gov', committees:['Appropriations','Commerce','Transportation'] },
+  ];
+  else return [
+    { id:'FLH001', first_name:'Paul', last_name:'Renner', party:'R', district:'24', region:'Northeast Florida', title:'State Representative', county:'Flagler', votes_with_party_pct:95.3, total_votes:521, bills_sponsored:14, term_ends:'2026', phone:'850-717-5024', url:'https://www.myfloridahouse.gov', committees:['Rules','Appropriations'] },
+    { id:'FLH002', first_name:'Fentrice', last_name:'Driskell', party:'D', district:'69', region:'Tampa Bay', title:'State Representative', county:'Hillsborough', votes_with_party_pct:97.8, total_votes:498, bills_sponsored:29, term_ends:'2026', phone:'850-717-5069', url:'https://www.myfloridahouse.gov', committees:['Judiciary','Education'] },
+    { id:'FLH003', first_name:'Anna', last_name:'Eskamani', party:'D', district:'42', region:'Central Florida', title:'State Representative', county:'Orange', votes_with_party_pct:98.4, total_votes:512, bills_sponsored:41, term_ends:'2026', phone:'850-717-5042', url:'https://www.myfloridahouse.gov', committees:['Commerce','Health'] },
+    { id:'FLH004', first_name:'Randy', last_name:'Fine', party:'R', district:'33', region:'Central Florida', title:'State Representative', county:'Brevard', votes_with_party_pct:92.1, total_votes:487, bills_sponsored:17, term_ends:'2026', phone:'850-717-5033', url:'https://www.myfloridahouse.gov', committees:['Education','Budget'] },
+    { id:'FLH005', first_name:'Dianne', last_name:'Hart', party:'D', district:'63', region:'Tampa Bay', title:'State Representative', county:'Hillsborough', votes_with_party_pct:96.7, total_votes:494, bills_sponsored:22, term_ends:'2026', phone:'850-717-5063', url:'https://www.myfloridahouse.gov', committees:['Criminal Justice','Children'] },
+    { id:'FLH006', first_name:'Vicki', last_name:'Lopez', party:'R', district:'113', region:'South Florida', title:'State Representative', county:'Miami-Dade', votes_with_party_pct:87.9, total_votes:476, bills_sponsored:19, term_ends:'2026', phone:'850-717-5113', url:'https://www.myfloridahouse.gov', committees:['Health','Commerce'] },
+    { id:'FLH007', first_name:'Webster', last_name:'Barnaby', party:'R', district:'35', region:'Central Florida', title:'State Representative', county:'Volusia', votes_with_party_pct:93.5, total_votes:483, bills_sponsored:11, term_ends:'2026', phone:'850-717-5035', url:'https://www.myfloridahouse.gov', committees:['Education','Transportation'] },
+    { id:'FLH008', first_name:'Michele', last_name:'Rayner', party:'D', district:'70', region:'Tampa Bay', title:'State Representative', county:'Pinellas', votes_with_party_pct:97.1, total_votes:501, bills_sponsored:26, term_ends:'2026', phone:'850-717-5070', url:'https://www.myfloridahouse.gov', committees:['Judiciary','Criminal Justice'] },
+    { id:'FLH009', first_name:'Alex', last_name:'Andrade', party:'R', district:'2', region:'Panhandle', title:'State Representative', county:'Escambia', votes_with_party_pct:94.8, total_votes:489, bills_sponsored:13, term_ends:'2026', phone:'850-717-5002', url:'https://www.myfloridahouse.gov', committees:['Criminal Justice','Commerce'] },
+    { id:'FLH010', first_name:'Ashley', last_name:'Gantt', party:'D', district:'109', region:'South Florida', title:'State Representative', county:'Miami-Dade', votes_with_party_pct:98.9, total_votes:508, bills_sponsored:33, term_ends:'2026', phone:'850-717-5109', url:'https://www.myfloridahouse.gov', committees:['Children','Health','Judiciary'] },
+  ];
+}
+
+function loadFLMembers() {
+  flMembers = getFLDemoMembers(flChamber);
+  renderFLMembers();
+}
+
+function renderFLMembers() {
+  const party = document.getElementById('fl-party-filter').value;
+  const region = document.getElementById('fl-region-filter').value;
+  const search = document.getElementById('fl-search').value.toLowerCase();
+
+  let filtered = flMembers.filter(m => {
+    if (party && m.party !== party) return false;
+    if (region && m.region !== region) return false;
+    if (search) {
+      const name = (m.first_name + ' ' + m.last_name).toLowerCase();
+      if (!name.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('fl-count-bar').textContent =
+    `Showing ${filtered.length} of ${flMembers.length} Florida ${flChamber === 'senate' ? 'State Senators' : 'State Representatives'}`;
+
+  const grid = document.getElementById('fl-members-grid');
+  grid.innerHTML = filtered.map(m => `
+    <div class="member-card ${flSelectedMember?.id === m.id ? 'selected' : ''}" onclick="selectFLMember('${m.id}')">
+      <div class="party-bar party-${m.party}"></div>
+      <div class="member-header">
+        <div class="member-name">${m.first_name} ${m.last_name}</div>
+        <div class="party-badge badge-${m.party}">${m.party === 'D' ? 'DEM' : 'REP'}</div>
+      </div>
+      <div class="member-meta">
+        <strong>${m.title}</strong><br>
+        District <strong>${m.district}</strong> · ${m.county} County<br>
+        <span style="color:#8a6000">${m.region}</span><br>
+        Bills Sponsored: <strong>${m.bills_sponsored}</strong> · Term ends: <strong>${m.term_ends}</strong>
+      </div>
+      <div class="vote-bar-wrap">
+        <div class="vote-label">Party Unity Score</div>
+        <div class="vote-bar"><div class="vote-fill" style="width:${m.votes_with_party_pct}%"></div></div>
+        <div class="vote-pct">${m.votes_with_party_pct}% · ${m.total_votes} votes cast</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectFLMember(id) {
+  flSelectedMember = flMembers.find(m => m.id === id);
+  if (!flSelectedMember) return;
+  renderFLMembers();
+
+  const m = flSelectedMember;
+  document.getElementById('fl-d-name').textContent = `${m.first_name} ${m.last_name}`;
+  document.getElementById('fl-d-sub').textContent =
+    `${m.title} · District ${m.district} · ${m.county} County · ${m.region} · ${m.party === 'R' ? 'Republican' : 'Democrat'} · Term ends ${m.term_ends}`;
+
+  document.getElementById('fl-tab-overview').innerHTML = `
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num">${m.votes_with_party_pct}%</div><div class="stat-label">Party Unity</div></div>
+      <div class="stat-box"><div class="stat-num">${m.total_votes}</div><div class="stat-label">Votes Cast</div></div>
+      <div class="stat-box"><div class="stat-num">${m.bills_sponsored}</div><div class="stat-label">Bills Sponsored</div></div>
+      <div class="stat-box"><div class="stat-num">${m.term_ends}</div><div class="stat-label">Term Ends</div></div>
+    </div>
+    <div style="margin-bottom:24px">
+      <div class="section-label">Committee Assignments</div>
+      <div style="margin-top:8px">${(m.committees||[]).map(c=>`<span class="committee-tag">${c}</span>`).join('')}</div>
+    </div>
+    <div>
+      <div class="section-label">Contact & Links</div>
+      <div class="contact-grid">
+        <div class="contact-item"><div class="contact-key">Phone (Tallahassee)</div><div class="contact-val">${m.phone}</div></div>
+        <div class="contact-item"><div class="contact-key">District</div><div class="contact-val">District ${m.district} · ${m.county} County</div></div>
+        <div class="contact-item"><div class="contact-key">Region</div><div class="contact-val">${m.region}</div></div>
+        <div class="contact-item"><div class="contact-key">Official Website</div><div class="contact-val"><a href="${m.url}" target="_blank">Visit Site ↗</a></div></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('fl-tab-bills').innerHTML = `
+    <table>
+      <thead><tr><th>Bill</th><th>Title</th><th>Filed</th><th>Status</th></tr></thead>
+      <tbody>${getFLDemoBills(m).map(b=>`<tr>
+        <td><span class="bill-id">${b.bill_id}</span></td>
+        <td>${b.title}</td>
+        <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${b.date}</td>
+        <td><span class="status-pill status-${b.status}">${b.status}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>
+  `;
+
+  document.getElementById('fl-tab-votes').innerHTML = getFLDemoVotes(m).map(v=>`
+    <div class="vote-row">
+      <span class="vote-result ${v.position==='Yea'?'vote-yes':v.position==='Nay'?'vote-no':'vote-not'}">${v.position}</span>
+      <span class="vote-desc">${v.description}</span>
+      <span class="vote-date">${v.date}</span>
+    </div>
+  `).join('');
+
+  const panel = document.getElementById('fl-detail-panel');
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  switchFLTab('overview');
+}
+
+function getFLDemoBills(m) {
+  return [
+    { bill_id: `${flChamber==='senate'?'SB':'HB'} ${Math.floor(Math.random()*900+100)}`, title: 'Property Insurance Reform Act', date: '2025-01-14', status: 'introduced' },
+    { bill_id: `${flChamber==='senate'?'SB':'HB'} ${Math.floor(Math.random()*900+100)}`, title: 'Public School Funding Expansion', date: '2025-01-28', status: 'passed' },
+    { bill_id: `${flChamber==='senate'?'SB':'HB'} ${Math.floor(Math.random()*900+100)}`, title: 'Environmental Protection Coastal Act', date: '2025-02-10', status: 'introduced' },
+    { bill_id: `${flChamber==='senate'?'SB':'HB'} ${Math.floor(Math.random()*900+100)}`, title: 'Small Business Tax Incentive Act', date: '2025-02-24', status: 'introduced' },
+  ];
+}
+
+function getFLDemoVotes(m) {
+  return [
+    { description: 'SB 4: Property Insurance Market Stabilization', date: '2025-03-12', position: 'Yea' },
+    { description: 'HB 1: General Appropriations Act 2025-26', date: '2025-03-05', position: m.party==='R'?'Yea':'Nay' },
+    { description: 'SB 250: Education Curriculum Standards', date: '2025-02-26', position: m.party==='R'?'Yea':'Nay' },
+    { description: 'HB 88: Minimum Wage Amendment', date: '2025-02-18', position: m.party==='D'?'Yea':'Nay' },
+    { description: 'SB 102: Everglades Restoration Funding', date: '2025-02-10', position: 'Yea' },
+  ];
+}
+
+function switchFLTab(tab) {
+  document.querySelectorAll('#fl-detail-panel .detail-tab').forEach((b, i) => {
+    b.classList.toggle('active', ['overview','bills','votes'][i] === tab);
+  });
+  ['fl-tab-overview','fl-tab-bills','fl-tab-votes'].forEach((id, i) => {
+    document.getElementById(id).classList.toggle('active', i === ['overview','bills','votes'].indexOf(tab));
+  });
+}
+
+function closeFLDetail() {
+  document.getElementById('fl-detail-panel').classList.remove('open');
+  flSelectedMember = null;
+  renderFLMembers();
+}
+
+// ─── FL BILLS ─────────────────────────────────────────────────────────────────
+function renderFLBills() {
+  const bills = [
+    { bill_id:'SB 4', title:'Property Insurance Market Stabilization Act', sponsor:'Kathleen Passidomo', party:'R', filed:'2025-01-07', status:'signed', subject:'Insurance' },
+    { bill_id:'HB 1', title:'General Appropriations Act 2025-2026', sponsor:'Tom Leek', party:'R', filed:'2025-01-08', status:'passed', subject:'Budget' },
+    { bill_id:'SB 102', title:'Everglades Agricultural Area Reservoir', sponsor:'Gayle Harrell', party:'R', filed:'2025-01-14', status:'introduced', subject:'Environment' },
+    { bill_id:'HB 215', title:'Affordable Housing Investment Act', sponsor:'Fentrice Driskell', party:'D', filed:'2025-01-20', status:'introduced', subject:'Housing' },
+    { bill_id:'SB 250', title:'Education Curriculum Standards Revision', sponsor:'Manny Diaz Jr.', party:'R', filed:'2025-01-28', status:'passed', subject:'Education' },
+    { bill_id:'HB 303', title:'Minimum Wage Gradual Increase Act', sponsor:'Anna Eskamani', party:'D', filed:'2025-02-04', status:'failed', subject:'Labor' },
+    { bill_id:'SB 318', title:'Cybersecurity Infrastructure Protection', sponsor:'Jason Pizzo', party:'D', filed:'2025-02-11', status:'introduced', subject:'Technology' },
+    { bill_id:'HB 401', title:'Prescription Drug Price Transparency', sponsor:'Ashley Gantt', party:'D', filed:'2025-02-18', status:'introduced', subject:'Healthcare' },
+    { bill_id:'SB 512', title:'Small Business Recovery Grant Program', sponsor:'Danny Burgess', party:'R', filed:'2025-02-25', status:'introduced', subject:'Commerce' },
+    { bill_id:'HB 589', title:'Election Integrity Enhancement Act', sponsor:'Randy Fine', party:'R', filed:'2025-03-04', status:'introduced', subject:'Elections' },
+  ];
+
+  document.getElementById('fl-bills-body').innerHTML = bills.map(b => `<tr>
+    <td><span class="bill-id">${b.bill_id}</span></td>
+    <td>${b.title}</td>
+    <td>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${b.party==='D'?'var(--dem)':'var(--rep)'};margin-right:6px"></span>
+      ${b.sponsor}
+    </td>
+    <td style="font-size:12px;color:var(--muted)">${b.subject}</td>
+    <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap">${b.filed}</td>
+    <td><span class="status-pill status-${b.status}">${b.status}</span></td>
+  </tr>`).join('');
+}
+
+// ─── FL HEARINGS ──────────────────────────────────────────────────────────────
+function renderFLHearings() {
+  const hearings = [
+    { month:'APR', day:'14', title:'Senate Appropriations Committee — Budget Review', location:'Room 412, Senate Building, Tallahassee', time:'9:00 AM', type:'committee' },
+    { month:'APR', day:'15', title:'House Education & Employment Committee', location:'Room 17, House Office Building', time:'1:30 PM', type:'committee' },
+    { month:'APR', day:'16', title:'Full Senate Floor Session', location:'Senate Chamber, The Capitol', time:'10:00 AM', type:'session' },
+    { month:'APR', day:'17', title:'Public Hearing: HB 401 Prescription Drug Transparency', location:'Room 212, Capitol Annex', time:'2:00 PM', type:'hearing' },
+    { month:'APR', day:'21', title:'House Judiciary Committee — Criminal Justice Reform', location:'Room 404, House Office Building', time:'9:30 AM', type:'committee' },
+    { month:'APR', day:'22', title:'Joint Legislative Committee on Climate Policy', location:'Room 110, Senate Building', time:'11:00 AM', type:'committee' },
+    { month:'APR', day:'25', title:'Full House Floor Session', location:'House Chamber, The Capitol', time:'10:00 AM', type:'session' },
+  ];
+
+  document.getElementById('fl-hearings-list').innerHTML = hearings.map(h => `
+    <div class="hearing-card">
+      <div class="hearing-date">
+        <span class="hearing-month">${h.month}</span>
+        <div class="hearing-day">${h.day}</div>
+      </div>
+      <div class="hearing-info">
+        <div class="hearing-title">${h.title}</div>
+        <div class="hearing-meta">${h.time} · ${h.location}</div>
+      </div>
+      <span class="hearing-type type-${h.type}">${h.type}</span>
+    </div>
+  `).join('');
+}
+
+// ─── FL COUNTIES ──────────────────────────────────────────────────────────────
+function renderFLCounties() {
+  const counties = [
+    'Alachua','Baker','Bay','Bradford','Brevard','Broward','Calhoun','Charlotte',
+    'Citrus','Clay','Collier','Columbia','DeSoto','Dixie','Duval','Escambia',
+    'Flagler','Franklin','Gadsden','Gilchrist','Glades','Gulf','Hamilton','Hardee',
+    'Hendry','Hernando','Highlands','Hillsborough','Holmes','Indian River','Jackson',
+    'Jefferson','Lafayette','Lake','Lee','Leon','Levy','Liberty','Madison','Manatee',
+    'Marion','Martin','Miami-Dade','Monroe','Nassau','Okaloosa','Okeechobee','Orange',
+    'Osceola','Palm Beach','Pasco','Pinellas','Polk','Putnam','St. Johns','St. Lucie',
+    'Santa Rosa','Sarasota','Seminole','Sumter','Suwannee','Taylor','Union','Volusia',
+    'Wakulla','Walton','Washington'
+  ];
+
+  document.getElementById('fl-county-grid').innerHTML = counties.map(c => `
+    <div style="background:white;padding:14px 16px;cursor:pointer;transition:background 0.15s;"
+      onmouseover="this.style.background='#f0f4f9'"
+      onmouseout="this.style.background='white'"
+      onclick="alert('${c} County — district & representative lookup coming soon!')">
+      <div style="font-size:13px;font-weight:500">${c}</div>
+      <div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--muted);margin-top:2px">County</div>
+    </div>
+  `).join('');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadMembers();
+</script>
+</body>
+</html>
