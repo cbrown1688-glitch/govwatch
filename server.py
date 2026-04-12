@@ -1,99 +1,114 @@
-
-from flask import Flask, jsonify, send_from_directory
-import requests
-import os
-
-app = Flask(__name__)
-
-API_KEY = 'JXzprF4VnXjwKyN32rMdItQvdxUmNS5SapCFyTv8'
-CONGRESS_BASE = 'https://api.congress.gov/v3'
-CONGRESS = 119
-FMT = 'format=json'
-
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
-
-@app.route('/api/members/<chamber>')
-def get_members(chamber):
-    all_members = []
-    offset = 0
-    limit = 250
-
-    while True:
-        url = f'{CONGRESS_BASE}/member/congress/{CONGRESS}?limit={limit}&offset={offset}&currentMember=true&api_key={API_KEY}&{FMT}'
-        r = requests.get(url)
-        data = r.json()
-        members = data.get('members', [])
-        if not members:
-            break
-        all_members.extend(members)
-        total = data.get('pagination', {}).get('count', 0)
-        offset += limit
-        if offset >= total:
-            break
-
-    if chamber == 'senate':
-        filtered = [m for m in all_members if not m.get('district')]
-        filtered = sorted(filtered, key=lambda m: m.get('name', ''))[:100]
-    else:
-        filtered = [m for m in all_members if m.get('district')]
-
-    for m in filtered:
-        m['_chamber'] = chamber
-
-    print(f"Chamber: {chamber}, After filter: {len(filtered)}")
-    return jsonify({'members': filtered, 'chamber': chamber, 'total': len(filtered)})
-
-@app.route('/api/member/<bioguide_id>/bills')
-def get_member_bills(bioguide_id):
-    from flask import request
-    limit = request.args.get('limit', 50)
-    offset = request.args.get('offset', 0)
-    url = f'{CONGRESS_BASE}/member/{bioguide_id}/sponsored-legislation?limit={limit}&offset={offset}&api_key={API_KEY}&{FMT}'
-    r = requests.get(url)
-    return jsonify(r.json())
-
-@app.route('/api/member/<bioguide_id>/detail')
-def get_member_detail(bioguide_id):
-    url = f'{CONGRESS_BASE}/member/{bioguide_id}?api_key={API_KEY}&{FMT}'
-    r = requests.get(url)
-    return jsonify(r.json())
-
-@app.route('/api/bills/recent')
-def get_recent_bills():
-    url = f'{CONGRESS_BASE}/bill/{CONGRESS}?limit=20&sort=updateDate+desc&api_key={API_KEY}&{FMT}'
-    r = requests.get(url)
-    data = r.json()
-    # Log first bill structure so we can see available fields
-    if data.get('bills'):
-        import json
-        print("BILL FIELDS:", list(data['bills'][0].keys()))
-        print("SAMPLE BILL:", json.dumps(data['bills'][0], indent=2)[:500])
-    return jsonify(data)
-
-@app.route('/api/member/<bioguide_id>/committees')
-def get_member_committees(bioguide_id):
-    url = f'{CONGRESS_BASE}/member/{bioguide_id}?api_key={API_KEY}&{FMT}'
-    r = requests.get(url)
-    data = r.json()
-    member = data.get('member', {})
-    # Extract committee info from member detail
-    committees = []
-    if member.get('committeeAssignments'):
-        for c in member['committeeAssignments'].get('item', []):
-            committees.append({
-                'name': c.get('committee', {}).get('name', ''),
-                'role': c.get('rank', 'Member')
-            })
-    return jsonify({'committees': committees, 'bioguideId': bioguide_id})
-
-@app.route('/api/votes/recent')
-def get_recent_votes():
-    url = f'{CONGRESS_BASE}/vote/congress/{CONGRESS}?limit=20&sort=date+desc&api_key={API_KEY}&{FMT}'
-    r = requests.get(url)
-    return jsonify(r.json())
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-app.run(host='0.0.0.0', port=port)
+Starting Container
+[2026-04-12 18:45:25 +0000] [1] [INFO] Starting gunicorn 25.3.0
+[2026-04-12 18:45:25 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+[2026-04-12 18:45:25 +0000] [1] [INFO] Using worker: sync
+[2026-04-12 18:45:25 +0000] [2] [INFO] Booting worker with pid: 2
+[2026-04-12 18:45:25 +0000] [1] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-04-12 18:45:25 +0000] [2] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 713, in spawn_worker
+    worker.init_process()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+    ~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+    return util.import_app(self.app_uri)
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+  File "/mise/installs/python/3.13.13/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/app/server.py", line 99, in <module>
+    app.run(host='0.0.0.0', port=port)
+                                 ^^^^
+NameError: name 'port' is not defined
+name 'port' is not defined
+[2026-04-12 18:45:25 +0000] [1] [ERROR] Worker (pid:2) exited with code 3.
+[2026-04-12 18:45:25 +0000] [1] [ERROR] Shutting down: Master
+[2026-04-12 18:45:25 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[2026-04-12 18:45:25 +0000] [2] [INFO] Worker exiting (pid: 2)
+[2026-04-12 18:45:26 +0000] [2] [INFO] Booting worker with pid: 2
+[2026-04-12 18:45:26 +0000] [1] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-04-12 18:45:26 +0000] [1] [INFO] Starting gunicorn 25.3.0
+[2026-04-12 18:45:26 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+[2026-04-12 18:45:26 +0000] [1] [INFO] Using worker: sync
+    ~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+[2026-04-12 18:45:26 +0000] [2] [ERROR] Exception in worker process
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/util.py", line 377, in import_app
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 713, in spawn_worker
+    worker.init_process()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+    mod = importlib.import_module(module)
+  File "/mise/installs/python/3.13.13/lib/python3.13/importlib/__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1395, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1023, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/app/server.py", line 99, in <module>
+    app.run(host='0.0.0.0', port=port)
+                                 ^^^^
+NameError: name 'port' is not defined
+name 'port' is not defined
+[2026-04-12 18:45:26 +0000] [2] [INFO] Worker exiting (pid: 2)
+[2026-04-12 18:45:26 +0000] [1] [ERROR] Worker (pid:2) exited with code 3.
+[2026-04-12 18:45:26 +0000] [1] [ERROR] Shutting down: Master
+[2026-04-12 18:45:26 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[2026-04-12 18:45:27 +0000] [2] [INFO] Booting worker with pid: 2
+[2026-04-12 18:45:27 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+[2026-04-12 18:45:27 +0000] [1] [INFO] Using worker: sync
+[2026-04-12 18:45:27 +0000] [1] [INFO] Starting gunicorn 25.3.0
+[2026-04-12 18:45:27 +0000] [1] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+[2026-04-12 18:45:27 +0000] [2] [ERROR] Exception in worker process
+    return util.import_app(self.app_uri)
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/arbiter.py", line 713, in spawn_worker
+    worker.init_process()
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/gunicorn/workers/base.py", line 136, in init_process
