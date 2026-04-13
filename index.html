@@ -2179,8 +2179,19 @@ function showMapPopup(event, abbr) {
 
   document.getElementById('popup-content').innerHTML = html;
 
-  const x = Math.min(event.clientX + 15, window.innerWidth - 360);
-  const y = Math.min(event.clientY - 10, window.innerHeight - 280);
+  const popupWidth = 320;
+  const popupHeight = 280;
+  const margin = 15;
+  // If cursor is in right half of screen, show popup to the LEFT
+  let x, y;
+  if (event.clientX > window.innerWidth / 2) {
+    x = event.clientX - popupWidth - margin;
+  } else {
+    x = event.clientX + margin;
+  }
+  // Keep popup vertically on screen
+  y = Math.min(event.clientY - 10, window.innerHeight - popupHeight);
+  y = Math.max(y, 10);
   popup.style.left = x + 'px';
   popup.style.top = y + 'px';
   popup.style.display = 'block';
