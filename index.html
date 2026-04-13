@@ -1300,9 +1300,12 @@ async function loadMemberBills(m) {
   try {
     const url = `${API_BASE}/api/member/${m.bioguideId}/bills?limit=50`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    console.log('Bills data for', m.last_name, ':', data);
+
     const bills = (data.sponsoredLegislation || [])
-      .filter(b => b.title && b.number && b.type) // remove incomplete records
+      .filter(b => b.title && b.number && b.type)
       .map(b => ({
         bill_id: `${b.type} ${b.number}`,
         title: b.title,
@@ -1314,19 +1317,34 @@ async function loadMemberBills(m) {
         url: buildBillUrl(b),
         congress: b.congress || 119
       }));
+
+    if (bills.length === 0) {
+      // Show honest message instead of fake demo data
+      document.getElementById('tab-bills').innerHTML = `
+        <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:2">
+          No bill data returned from API for this member.<br>
+          <a href="https://www.congress.gov/member/${m.first_name}-${m.last_name}/${m.bioguideId}#tabs_5"
+             target="_blank" style="color:var(--accent2)">
+            View sponsored legislation on Congress.gov ↗
+          </a>
+        </div>`;
+      return;
+    }
     renderBillsTab(bills, m.bioguideId);
-  } catch {
-    renderBillsTab(getDemoBills(m));
+  } catch(e) {
+    console.error('Bills fetch error:', e);
+    document.getElementById('tab-bills').innerHTML = `
+      <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:2">
+        Could not load bills (${e.message}).<br>
+        <a href="https://www.congress.gov/member/${m.first_name}-${m.last_name}/${m.bioguideId}"
+           target="_blank" style="color:var(--accent2)">
+          View on Congress.gov ↗
+        </a>
+      </div>`;
   }
 }
 
-function getDemoBills(m) {
-  return [
-    { bill_id: 'S.112', title: 'Infrastructure Modernization Act', introduced_date: '2025-02-14', status: 'introduced', committees: 'Commerce' },
-    { bill_id: 'S.287', title: 'Veterans Healthcare Expansion Act', introduced_date: '2025-03-01', status: 'passed', committees: 'Veterans Affairs' },
-    { bill_id: 'S.405', title: 'Small Business Tax Relief Act', introduced_date: '2025-04-10', status: 'introduced', committees: 'Finance' },
-  ];
-}
+// getDemoBills removed - showing real data or honest error message instead
 
 // Convert bill type to congress.gov URL format
 function buildBillUrl(b) {
