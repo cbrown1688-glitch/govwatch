@@ -21,7 +21,8 @@ def get_members(chamber):
     all_members = []
     offset = 0
     limit = 250
-    while True:
+    total = 999
+    while offset < total:
         url = f'{CONGRESS_BASE}/member/congress/{CONGRESS}?limit={limit}&offset={offset}&currentMember=true&api_key={API_KEY}&{FMT}'
         r = requests.get(url, timeout=TIMEOUT)
         data = r.json()
@@ -29,31 +30,34 @@ def get_members(chamber):
         if not members:
             break
         all_members.extend(members)
-        total = data.get('pagination', {}).get('count', 0)
+        total = data.get('pagination', {}).get('count', 999)
+        print(f'Fetched offset {offset}, got {len(members)}, total={total}, accumulated={len(all_members)}')
         offset += limit
-        if offset >= total:
-            break
 
     def get_member_chamber(m):
-        terms = m.get('terms', {}).get('item', [])
+        terms = m.get('terms', [])
+        if isinstance(terms, dict):
+            terms = terms.get('item', [])
         if terms:
-            latest = terms[0] if isinstance(terms[0], dict) else terms[0][0] if terms[0] else {}
-            term_chamber = latest.get('chamber', '')
-            if term_chamber == 'Senate':
-                return 'senate'
-            if term_chamber == 'House of Representatives':
-                return 'house'
+            current = next((t for t in terms if t.get('congress') == 119), None)
+            check = current or terms[-1]
+            if isinstance(check, dict):
+                ch = check.get('chamber', '')
+                if ch == 'Senate':
+                    return 'senate'
+                if ch == 'House of Representatives':
+                    return 'house'
         district = m.get('district')
-        if district is not None and str(district) != '0':
+        if district is not None and str(district) not in ['0', 'None', '']:
             return 'house'
         return 'senate'
 
-    if chamber == 'senate':
-        filtered = [m for m in all_members if get_member_chamber(m) == 'senate']
-        filtered = sorted(filtered, key=lambda m: m.get('name', ''))[:100]
-    else:
-        filtered = [m for m in all_members if get_member_chamber(m) == 'house']
+    filtered = [m for m in all_members if get_member_chamber(m) == chamber]
+    print(f'After filter: {len(filtered)} {chamber} members from {len(all_members)} total')
 
+    if chamber == 'senate':
+        filtered = sorted(filtered, key=lambda m: m.get('name', ''))[:100]
+    
     for m in filtered:
         m['_chamber'] = chamber
 
@@ -143,14 +147,9 @@ def get_member_funding(bioguide_id):
         member_data = member_r.json().get('member', {})
         name = member_data.get('directOrderName', '')
         state = member_data.get('state', '')
-
         if not name:
             return jsonify({'error': 'Member not found', 'candidate': None, 'totals': {}, 'industries': []})
-
-       # Use last name only for better FEC matching
         last_name = name.split(',')[0].strip() if ',' in name else name.split()[-1]
-
-        # Convert full state name to abbreviation for FEC
         state_abbr_map = {
             'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
             'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
@@ -165,45 +164,32 @@ def get_member_funding(bioguide_id):
         }
         state_abbr = state_abbr_map.get(state, state)
         print(f'Searching FEC for: {last_name} in {state_abbr}')
-
         search_url = f'https://api.open.fec.gov/v1/candidates/?q={quote(last_name)}&state={state_abbr}&has_raised_funds=true&api_key={FEC_KEY}&per_page=10'
-        print(f'FEC URL: {search_url}')
         search_r = requests.get(search_url, timeout=TIMEOUT)
         candidates = search_r.json().get('results', [])
         print(f'FEC candidates found: {len(candidates)}')
         for c in candidates:
             print(f'  - {c.get("name")} ({c.get("candidate_id")})')
-
         if not candidates:
             return jsonify({'error': 'No FEC candidate found', 'candidate': None, 'totals': {}, 'industries': []})
-
-        # Find best match — prefer Senate candidates (S prefix) over House (H prefix)
-        # and prefer name starting with last name
-        candidate = None
         senate_matches = [c for c in candidates if c.get('candidate_id', '').startswith('S') and c.get('name', '').upper().startswith(last_name.upper())]
         house_matches = [c for c in candidates if c.get('name', '').upper().startswith(last_name.upper())]
-        
         if senate_matches:
             candidate = senate_matches[0]
         elif house_matches:
             candidate = house_matches[0]
         else:
             candidate = candidates[0]
-            
         print(f'Selected candidate: {candidate.get("name")} ({candidate.get("candidate_id")})')
         candidate_id = candidate.get('candidate_id')
-
-        # Get financial totals using reports endpoint
         totals_url = f'https://api.open.fec.gov/v1/candidate/{candidate_id}/totals/?api_key={FEC_KEY}&per_page=1'
         totals_r = requests.get(totals_url, timeout=TIMEOUT)
         print(f'Totals status: {totals_r.status_code}')
         if totals_r.status_code == 200 and totals_r.text:
             totals = totals_r.json().get('results', [{}])[0]
         else:
-            # Fallback to candidate summary
             summary_url = f'https://api.open.fec.gov/v1/candidates/?candidate_id={candidate_id}&api_key={FEC_KEY}&per_page=1'
             summary_r = requests.get(summary_url, timeout=TIMEOUT)
-            print(f'Summary status: {summary_r.status_code}')
             candidate_detail = summary_r.json().get('results', [{}])[0]
             totals = {
                 'receipts': candidate_detail.get('receipts', 0),
@@ -211,29 +197,19 @@ def get_member_funding(bioguide_id):
                 'last_cash_on_hand_end_period': candidate_detail.get('cash_on_hand_end_period', 0),
                 'cycle': candidate_detail.get('election_year', '')
             }
-
-     # Get top donors via schedule_a with committee lookup
         industries = []
-        # First get the principal campaign committee ID
         comm_url = f'https://api.open.fec.gov/v1/candidate/{candidate_id}/committees/?api_key={FEC_KEY}&designation=P'
         comm_r = requests.get(comm_url, timeout=TIMEOUT)
-        print(f'Principal committee status: {comm_r.status_code}')
         if comm_r.status_code == 200 and comm_r.text:
             comms = comm_r.json().get('results', [])
-            print(f'Committees: {[(c.get("name"), c.get("committee_id")) for c in comms]}')
             if comms:
                 committee_id = comms[0].get('committee_id')
-                # Get top donors to this committee
                 donors_url = f'https://api.open.fec.gov/v1/schedules/schedule_a/?committee_id={committee_id}&api_key={FEC_KEY}&per_page=10&sort=-contribution_receipt_amount&two_year_transaction_period=2024&is_individual=false'
                 donors_r = requests.get(donors_url, timeout=TIMEOUT)
-                print(f'Donors status: {donors_r.status_code}')
                 if donors_r.status_code == 200 and donors_r.text:
                     donor_results = donors_r.json().get('results', [])
-                    print(f'Found {len(donor_results)} donors')
                     industries = [{'industry_name': d.get('contributor_name', 'Unknown'), 'total': d.get('contribution_receipt_amount', 0)} for d in donor_results]
-
         return jsonify({'candidate': candidate, 'totals': totals, 'industries': industries})
-
     except Exception as e:
         print(f'Funding error: {e}')
         return jsonify({'error': str(e), 'candidate': None, 'totals': {}, 'industries': []}), 200

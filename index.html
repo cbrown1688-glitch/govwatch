@@ -2193,8 +2193,10 @@ async function renderUSMap() {
     .append('text')
     .attr('transform', d => {
       const c = path.centroid(d);
-      return c ? `translate(${c})` : '';
+      if (!c || isNaN(c[0]) || isNaN(c[1])) return null;
+      return `translate(${c})`;
     })
+    .filter(function() { return d3.select(this).attr('transform') !== null; })
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
     .attr('font-size', '8px')
