@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GovWatch — US Congress & Florida Legislature Tracker</title>
+<title>GovWatch — Tracking All Three Branches of the US Government</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -777,26 +777,40 @@
 
 <header>
   <div class="header-top">
-    <span>GOV<span style="color:var(--accent)">WATCH</span> — US CONGRESS & FLORIDA LEGISLATURE TRACKER</span>
+    <span>GOV<span style="color:var(--accent)">WATCH</span> — TRANSPARENCY ACROSS ALL THREE BRANCHES OF GOVERNMENT</span>
     <span id="live-date"></span>
   </div>
   <div class="header-main">
     <div class="logo">Gov<span>Watch</span></div>
-    <div class="tagline">Federal Congress · State Governments Coming Soon · Civic Transparency</div>
+    <div class="tagline">Legislative · Executive · Judicial · Full Government Transparency</div>
   </div>
   <nav>
-    <button class="active" onclick="showPage('members')">Federal: Members</button>
-    <button onclick="showPage('bills')">Federal: Bills</button>
-    <button onclick="showPage('map')">🗺️ State Map</button>
-    <button onclick="showPage('florida')">🏛️ Your State</button>
+    <button class="active" onclick="showPage('members')">⚖️ Legislative</button>
+    <button onclick="showPage('executive')">🏛️ Executive</button>
+    <button onclick="showPage('judicial')">🏛️ Judicial</button>
+    <button onclick="showPage('map')">🗺️ Interactive Map</button>
+    <button onclick="showPage('florida')">📍 Your State</button>
     <button onclick="showPage('about')">About</button>
   </nav>
+  <!-- Legislative sub-nav -->
+  <div id="legislative-subnav" style="background:#1a3a5c;padding:0 32px;display:flex;gap:0">
+    <button style="background:none;border:none;color:#aac4e0;font-family:'IBM Plex Mono',monospace;
+      font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;
+      border-bottom:2px solid transparent;" 
+      onmouseover="this.style.color='white'" onmouseout="this.style.color='#aac4e0'"
+      onclick="showPage('members')">Members</button>
+    <button style="background:none;border:none;color:#aac4e0;font-family:'IBM Plex Mono',monospace;
+      font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;
+      border-bottom:2px solid transparent;"
+      onmouseover="this.style.color='white'" onmouseout="this.style.color='#aac4e0'"
+      onclick="showPage('bills')">Recent Bills</button>
+  </div>
 </header>
 
-<!-- MEMBERS PAGE -->
+<!-- MEMBERS PAGE (LEGISLATIVE BRANCH) -->
 <div id="page-members">
 <div class="container">
-  <div class="section-label">119th Congress</div>
+  <div class="section-label">Legislative Branch · 119th Congress</div>
   <div class="section-title">Congressional Members</div>
 
   <div class="filters">
@@ -859,7 +873,7 @@
 <!-- BILLS PAGE -->
 <div id="page-bills" style="display:none">
 <div class="container">
-  <div class="section-label">119th Congress · Recent Activity</div>
+  <div class="section-label">Legislative Branch · 119th Congress · Recent Activity</div>
   <div class="section-title">Recent Bills</div>
   <div id="bills-container"><div class="loading">Loading recent bills</div></div>
 </div>
@@ -884,6 +898,127 @@
 </div>
 </div>
 
+
+
+<!-- EXECUTIVE BRANCH PAGE -->
+<div id="page-executive" style="display:none">
+  <div style="background:var(--ink);color:var(--paper);padding:80px 32px;text-align:center;border-bottom:4px solid #c8a228">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:16px">Coming Soon</div>
+    <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:900;line-height:1.1;margin-bottom:12px">
+      The Executive Branch.<br><span style="color:#c8a228">Your Right to Know.</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#aaa;max-width:600px;margin:20px auto 0;line-height:1.8">
+      The President, Vice President, Cabinet, and federal agencies — who they are, 
+      what they control, and how they exercise power on your behalf.
+    </div>
+  </div>
+  <div class="container" style="max-width:800px;text-align:center;padding-top:60px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:48px">
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🏛️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">The President</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Executive orders, actions, and decisions</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">👥</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">The Cabinet</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Secretaries, confirmation votes, backgrounds</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🏢</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Federal Agencies</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">What they do, who leads them, their budgets</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">📜</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Executive Orders</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Searchable orders with plain English summaries</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">💰</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Campaign Finance</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Who funded the President's campaign</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">📊</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Federal Budget</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Where your tax dollars go</div>
+      </div>
+    </div>
+    <div style="border:1px solid var(--rule);padding:32px;background:white;margin-bottom:32px">
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:8px">In Development</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px">
+        Executive branch tracking is being built now. Start with the Legislative branch today.
+      </div>
+      <a href="#" onclick="showPage('members');return false;" style="
+        display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+        letter-spacing:0.1em;text-transform:uppercase;padding:12px 28px;
+        background:var(--accent2);color:white;text-decoration:none;">
+        Explore Congress Now →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- JUDICIAL BRANCH PAGE -->
+<div id="page-judicial" style="display:none">
+  <div style="background:var(--ink);color:var(--paper);padding:80px 32px;text-align:center;border-bottom:4px solid #8a5a00">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:16px">Coming Soon</div>
+    <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:900;line-height:1.1;margin-bottom:12px">
+      The Judicial Branch.<br><span style="color:#c8a228">Your Right to Know.</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#aaa;max-width:600px;margin:20px auto 0;line-height:1.8">
+      The Supreme Court, federal judges, and landmark rulings — who interprets 
+      the law, who appointed them, and how their decisions affect your life.
+    </div>
+  </div>
+  <div class="container" style="max-width:800px;text-align:center;padding-top:60px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:48px">
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">⚖️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Supreme Court</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">9 justices, their records, who appointed them</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">📋</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Landmark Rulings</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Major decisions in plain English</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🏛️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Federal Courts</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Circuit and district court judges</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">👤</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Judge Profiles</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Background, appointing president, rulings</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">📰</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Current Cases</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Cases before the court right now</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🗳️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Confirmation Votes</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">How senators voted on each justice</div>
+      </div>
+    </div>
+    <div style="border:1px solid var(--rule);padding:32px;background:white;margin-bottom:32px">
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:8px">In Development</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px">
+        Judicial branch tracking is being built now. Start with the Legislative branch today.
+      </div>
+      <a href="#" onclick="showPage('members');return false;" style="
+        display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+        letter-spacing:0.1em;text-transform:uppercase;padding:12px 28px;
+        background:var(--accent2);color:white;text-decoration:none;">
+        Explore Congress Now →
+      </a>
+    </div>
+  </div>
+</div>
 
 <!-- MAP PAGE -->
 <div id="page-map" style="display:none">
@@ -1202,21 +1337,23 @@ let chamber = 'senate';
 let selectedMember = null;
 
 // ─── PAGE NAV ─────────────────────────────────────────────────────────────────
-const ALL_PAGES = ['members','bills','map','florida','about'];
+const ALL_PAGES = ['members','executive','judicial','map','florida','bills','about'];
 
 function showPage(page) {
   ALL_PAGES.forEach(p => {
-    document.getElementById('page-' + p).style.display = p === page ? 'block' : 'none';
+    const el = document.getElementById('page-' + p);
+    if (el) el.style.display = p === page ? 'block' : 'none';
   });
+  // Handle legislative sub-pages under the Legislative nav button
+  const legislativePages = ['members', 'bills'];
   document.querySelectorAll('nav button').forEach((b, i) => {
-    b.classList.toggle('active', ALL_PAGES[i] === page);
+    const navPages = ['members', 'executive', 'judicial', 'map', 'florida', 'about'];
+    const isActive = navPages[i] === page || 
+      (navPages[i] === 'members' && legislativePages.includes(page));
+    b.classList.toggle('active', isActive);
   });
   if (page === 'bills' && !document.getElementById('bills-container').dataset.loaded) {
     loadRecentBills();
-  }
-  if (page === 'florida' && !window.flLoaded) {
-    window.flLoaded = true;
-    initFlorida();
   }
   if (page === 'map' && !window.mapLoaded) {
     window.mapLoaded = true;
