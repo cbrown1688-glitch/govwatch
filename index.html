@@ -2093,20 +2093,25 @@ function recolorMap() {
 }
 
 function initMap() {
-  // Show loading indicator while waiting
   document.getElementById('us-map').innerHTML = '<text x="480" y="300" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#7a7670">Loading member data...</text>';
 
-  // Load D3 and TopoJSON
+  // Load D3 and TopoJSON first
   loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js', () => {
     loadScript('https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js', () => {
-      // Wait for member data before rendering colors
-      if (window.membersReady) {
-        renderUSMap();
-      } else {
-        window.membersReadyCallback = renderUSMap;
-      }
+      waitForMembersAndRender();
     });
   });
+}
+
+function waitForMembersAndRender() {
+  // Poll until we have senate members loaded
+  const senateMembersLoaded = allMembers.filter(m => m.chamber === 'senate').length >= 50;
+  if (senateMembersLoaded) {
+    renderUSMap();
+  } else {
+    console.log('Map waiting for members... currently have:', allMembers.length);
+    setTimeout(waitForMembersAndRender, 500);
+  }
 }
 
 function loadScript(src, callback) {
