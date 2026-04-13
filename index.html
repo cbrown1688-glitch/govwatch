@@ -844,11 +844,13 @@
       <button class="detail-tab active" onclick="switchTab('overview')">Overview</button>
       <button class="detail-tab" onclick="switchTab('bills')">Bills Sponsored</button>
       <button class="detail-tab" onclick="switchTab('votes')">Recent Votes</button>
+      <button class="detail-tab" onclick="switchTab('funding')">💰 Funding</button>
     </div>
     <div class="detail-body">
       <div class="detail-content active" id="tab-overview"></div>
       <div class="detail-content" id="tab-bills"></div>
       <div class="detail-content" id="tab-votes"></div>
+      <div class="detail-content" id="tab-funding"></div>
     </div>
   </div>
 </div>
@@ -1271,9 +1273,10 @@ function selectMember(id) {
   selectedMember = allMembers.find(m => m.id === id);
   if (!selectedMember) return;
 
-  renderMembers();
-
   const m = selectedMember;
+  console.log('Selected member:', m.first_name, m.last_name, '| id:', m.id, '| bioguideId:', m.bioguideId);
+
+  renderMembers();
   const partyName = m.party === 'D' ? 'Democrat' : m.party === 'R' ? 'Republican' : 'Independent';
   document.getElementById('d-name').textContent = `${m.first_name} ${m.last_name}`;
   document.getElementById('d-sub').textContent =
@@ -1325,6 +1328,7 @@ function selectMember(id) {
   loadMemberDetail(m);
   loadMemberBills(m);
   loadMemberVotes(m);
+  loadMemberFunding(m);
 }
 
 // ─── LOAD MEMBER DETAIL (committees) ─────────────────────────────────────────
@@ -1692,11 +1696,13 @@ function renderRecentBills(bills) {
 
 // ─── DETAIL TABS ──────────────────────────────────────────────────────────────
 function switchTab(tab) {
+  const tabs = ['overview','bills','votes','funding'];
+  const contents = ['tab-overview','tab-bills','tab-votes','tab-funding'];
   document.querySelectorAll('.detail-tab').forEach((b, i) => {
-    b.classList.toggle('active', ['overview','bills','votes'][i] === tab);
+    b.classList.toggle('active', tabs[i] === tab);
   });
   document.querySelectorAll('.detail-content').forEach((c, i) => {
-    c.classList.toggle('active', ['tab-overview','tab-bills','tab-votes'][i] === 'tab-' + tab);
+    c.classList.toggle('active', contents[i] === 'tab-' + tab);
   });
 }
 
@@ -2282,6 +2288,202 @@ function showStateDetail(abbr) {
 
 // Update showPage to init map
 const _origShowPage = showPage;
+// ─── FUNDING ─────────────────────────────────────────────────────────────────
+async function loadMemberFunding(m) {
+  document.getElementById('tab-funding').innerHTML = '<div class="loading">Loading campaign finance data</div>';
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/funding`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error || !data.candidate) {
+      document.getElementById('tab-funding').innerHTML = `
+        <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:2">
+          No FEC campaign finance data found for this member.<br>
+          <a href="https://www.fec.gov/data/candidates/?q=${encodeURIComponent(m.first_name + ' ' + m.last_name)}"
+             target="_blank" style="color:var(--accent2)">Search on FEC.gov ↗</a>
+        </div>`;
+      return;
+    }
+
+    const { candidate, totals, industries } = data;
+    const raised = totals.receipts || 0;
+    const spent = totals.disbursements || 0;
+    const cash = totals.last_cash_on_hand_end_period || 0;
+    const pac = totals.other_political_committee_contributions || 0;
+    const party = totals.political_party_committee_contributions || 0;
+    const self = totals.candidate_contribution || 0;
+    const individual = totals.individual_contributions || 0;
+    const smallDonors = totals.individual_unitemized_contributions || 0;  // under $200
+    const largeDonors = totals.individual_itemized_contributions || 0;    // over $200
+    const operatingExp = totals.operating_expenditures || 0;
+    const otherExp = totals.other_disbursements || 0;
+    const coverageEnd = totals.coverage_end_date ? totals.coverage_end_date.split('T')[0] : '';
+    let electionYear = '2024';
+    try {
+      const futureYears = candidate.election_years ? candidate.election_years.filter(y => y >= 2024) : [];
+      electionYear = futureYears.length > 0 ? Math.min(...futureYears) : (candidate.election_years?.length ? Math.max(...candidate.election_years) : '2024');
+    } catch(e) { electionYear = '2024'; }
+
+    const fmt = n => '$' + Math.round(n).toLocaleString();
+    const pct = (a, b) => b > 0 ? Math.min(100, Math.round((a/b)*100)) : 0;
+
+    // Determine if PAC-free based on data
+    const isPacFree = pac < 1000 && raised > 100000;
+
+    let html = `
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div class="section-label" style="margin-bottom:0">${electionYear} Election Cycle — Campaign Finance</div>
+          ${isPacFree ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;padding:3px 8px;background:#e6f4ea;color:#2d7a3e;text-transform:uppercase">PAC-Free</span>` : ''}
+        </div>
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-num" style="font-size:22px">${fmt(raised)}</div>
+            <div class="stat-label">Total Raised</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="font-size:22px">${fmt(spent)}</div>
+            <div class="stat-label">Total Spent</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="font-size:22px">${fmt(cash)}</div>
+            <div class="stat-label">Cash on Hand</div>
+          </div>
+        </div>
+        ${coverageEnd ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px">Data through ${coverageEnd}</div>` : ''}
+      </div>`;
+
+    // Full money breakdown
+    if (raised > 0) {
+      const sources = [
+        { label: 'Small Donors (under $200)', amount: smallDonors, color: '#2d7a3e', desc: 'Grassroots individual donations' },
+        { label: 'Large Donors (over $200)', amount: largeDonors, color: '#1a55a0', desc: 'Itemized individual donations' },
+        { label: 'PAC Money', amount: pac, color: '#c8392b', desc: 'Political Action Committees' },
+        { label: 'Party Committees', amount: party, color: '#8a5a00', desc: 'Political party contributions' },
+        { label: 'Self-Funded', amount: self, color: '#555', desc: 'Candidate personal funds' },
+      ].filter(s => s.amount > 0);
+
+      html += `
+        <div style="margin-bottom:28px">
+          <div class="section-label" style="margin-bottom:16px">Where the Money Comes From</div>
+          ${sources.map(s => `
+            <div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+                <div>
+                  <span style="font-size:13px;font-weight:500">${s.label}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:8px">${s.desc}</span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;white-space:nowrap;margin-left:12px">
+                  ${fmt(s.amount)} <span style="color:var(--muted);font-weight:400">(${pct(s.amount, raised)}%)</span>
+                </span>
+              </div>
+              <div class="vote-bar">
+                <div class="vote-fill" style="width:${pct(s.amount, raised)}%;background:${s.color}"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+
+      // Spending breakdown
+      html += `
+        <div style="margin-bottom:28px">
+          <div class="section-label" style="margin-bottom:16px">Where the Money Goes</div>
+          ${[
+            { label: 'Operating Expenses', amount: operatingExp, desc: 'Staff, ads, events, offices' },
+            { label: 'Other Disbursements', amount: otherExp, desc: 'Miscellaneous spending' },
+          ].filter(s => s.amount > 0).map(s => `
+            <div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+                <div>
+                  <span style="font-size:13px;font-weight:500">${s.label}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:8px">${s.desc}</span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;white-space:nowrap;margin-left:12px">
+                  ${fmt(s.amount)} <span style="color:var(--muted);font-weight:400">(${pct(s.amount, spent)}%)</span>
+                </span>
+              </div>
+              <div class="vote-bar">
+                <div class="vote-fill" style="width:${pct(s.amount, spent)}%;background:var(--accent2)"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+    }
+
+    // Top industries
+    if (industries.length) {
+      // Consolidate duplicate donors by summing their totals
+      const donorMap = {};
+      industries.forEach(ind => {
+        const name = ind.industry_name || ind.industry || 'Unknown';
+        if (donorMap[name]) {
+          donorMap[name] += ind.total;
+        } else {
+          donorMap[name] = ind.total;
+        }
+      });
+      const consolidatedDonors = Object.entries(donorMap)
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 8);
+      const maxDonor = consolidatedDonors[0]?.total || 1;
+
+      html += `
+        <div style="margin-bottom:24px">
+          <div class="section-label" style="margin-bottom:4px">Top PAC & Organizational Donors</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;line-height:1.8">
+            Largest non-individual contributions · Industry categorization coming soon via OpenSecrets
+          </div>
+          ${consolidatedDonors.map(d => `
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:13px;font-weight:500">${d.name}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${fmt(d.total)}</span>
+              </div>
+              <div class="vote-bar">
+                <div class="vote-fill" style="width:${pct(d.total, maxDonor)}%;background:var(--accent2)"></div>
+              </div>
+            </div>
+          `).join('')}
+          <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
+            <a href="https://www.opensecrets.org/members-of-congress" target="_blank" style="color:var(--accent2)">
+              View full industry breakdown on OpenSecrets ↗
+            </a>
+          </div>
+        </div>`;
+    } else {
+      html += `
+        <div style="margin-bottom:24px">
+          <div class="section-label" style="margin-bottom:8px">Industry Breakdown</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8">
+            Industry-level data not available for current cycle.<br>
+            <a href="https://www.opensecrets.org/members-of-congress" target="_blank" style="color:var(--accent2)">
+              View industry breakdown on OpenSecrets ↗
+            </a>
+          </div>
+        </div>`;
+    }
+
+    html += `
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.8;border-top:1px solid var(--rule);padding-top:16px">
+        Source: Federal Election Commission (FEC) · ${electionYear} election cycle<br>
+        <a href="https://www.fec.gov/data/candidate/${candidate.candidate_id}/" target="_blank" style="color:var(--accent2)">
+          View full FEC profile for ${m.first_name} ${m.last_name} ↗
+        </a>
+      </div>`;
+
+    document.getElementById('tab-funding').innerHTML = html;
+
+  } catch(e) {
+    console.error('Funding error:', e);
+    document.getElementById('tab-funding').innerHTML = `
+      <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        Could not load funding data. <a href="https://www.fec.gov" target="_blank" style="color:var(--accent2)">Visit FEC.gov ↗</a>
+      </div>`;
+  }
+}
+
 // ─── BACK TO TOP ─────────────────────────────────────────────────────────────────
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('back-to-top');
