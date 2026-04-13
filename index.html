@@ -2397,6 +2397,9 @@ async function loadMemberFunding(m) {
     // Full money breakdown
     if (raised > 0) {
       const transfers = totals.transfers_from_other_authorized_committee || 0;
+      const otherReceipts = totals.other_receipts || 0;
+      const refunds = totals.contribution_refunds || 0;
+
       const sources = [
         { label: 'Small Donors (under $200)', amount: smallDonors, color: '#2d7a3e', desc: 'Grassroots individual donations' },
         { label: 'Large Donors (over $200)', amount: largeDonors, color: '#1a55a0', desc: 'Itemized individual donations' },
@@ -2404,15 +2407,24 @@ async function loadMemberFunding(m) {
         { label: 'Party Committees', amount: party, color: '#8a5a00', desc: 'Political party contributions' },
         { label: 'Transfers from Other Committees', amount: transfers, color: '#6a4c93', desc: 'Funds moved from other campaign accounts' },
         { label: 'Self-Funded', amount: self, color: '#555', desc: 'Candidate personal funds' },
+        { label: 'Other Receipts', amount: otherReceipts, color: '#888', desc: 'Miscellaneous income' },
       ].filter(s => s.amount > 0);
+
+      // Calculate subtotal of known sources
+      const subtotal = sources.reduce((sum, s) => sum + s.amount, 0);
+      const gap = raised - subtotal;
+      const hasGap = Math.abs(gap) > 100;
 
       html += `
         <div style="margin-bottom:28px">
-          <div class="section-label" style="margin-bottom:16px">Where the Money Comes From</div>
+          <div class="section-label" style="margin-bottom:4px">Where the Money Comes From</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;line-height:1.8">
+            Percentages are of total raised · Subtotal may differ from total raised due to refunds and accounting adjustments
+          </div>
           ${sources.map(s => `
-            <div style="margin-bottom:14px">
+            <div style="margin-bottom:12px">
               <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-                <div>
+                <div style="flex:1;min-width:0">
                   <span style="font-size:13px;font-weight:500">${s.label}</span>
                   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:8px">${s.desc}</span>
                 </div>
@@ -2425,6 +2437,26 @@ async function loadMemberFunding(m) {
               </div>
             </div>
           `).join('')}
+          <div style="border-top:2px solid var(--rule);margin-top:16px;padding-top:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Subtotal (itemized sources)</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500">${fmt(subtotal)}</span>
+            </div>
+            ${refunds > 0 ? `
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Refunds & adjustments</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent)">-${fmt(refunds)}</span>
+            </div>` : ''}
+            ${hasGap ? `
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Unitemized / other</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${fmt(Math.abs(gap))}</span>
+            </div>` : ''}
+            <div style="display:flex;justify-content:space-between;border-top:1px solid var(--rule);padding-top:8px;margin-top:4px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600">Total Raised (gross receipts)</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600">${fmt(raised)}</span>
+            </div>
+          </div>
         </div>`;
 
       // Spending breakdown
