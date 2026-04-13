@@ -758,6 +758,7 @@
   <nav>
     <button class="active" onclick="showPage('members')">Federal: Members</button>
     <button onclick="showPage('bills')">Federal: Bills</button>
+    <button onclick="showPage('map')">🗺️ State Map</button>
     <button onclick="showPage('florida')">🌴 Florida</button>
     <button onclick="showPage('about')">About</button>
   </nav>
@@ -850,6 +851,48 @@
     </ul>
   </div>
 </div>
+</div>
+
+
+<!-- MAP PAGE -->
+<div id="page-map" style="display:none">
+  <div class="container">
+    <div class="section-label">Interactive</div>
+    <div class="section-title">US State Map</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:24px;font-family:'IBM Plex Mono',monospace">
+      Hover over any state to see its senators and governor. Click to select.
+    </p>
+
+    <div style="position:relative">
+      <!-- Map container -->
+      <div id="map-container" style="width:100%;background:white;border:1px solid var(--rule);padding:16px;position:relative">
+        <svg id="us-map" viewBox="0 0 960 600" style="width:100%;height:auto;display:block"></svg>
+      </div>
+
+      <!-- Hover popup -->
+      <div id="map-popup" style="
+        display:none;
+        position:fixed;
+        background:white;
+        border:1px solid var(--rule);
+        border-left:4px solid var(--accent2);
+        padding:16px 20px;
+        min-width:280px;
+        max-width:340px;
+        z-index:1000;
+        box-shadow:0 4px 20px rgba(0,0,0,0.12);
+        pointer-events:none;
+      ">
+        <div id="popup-state" style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;border-bottom:1px solid var(--rule);padding-bottom:8px"></div>
+        <div id="popup-content"></div>
+      </div>
+    </div>
+
+    <!-- Selected state detail -->
+    <div id="state-detail" style="display:none;margin-top:32px">
+      <div id="state-detail-content"></div>
+    </div>
+  </div>
 </div>
 
 <!-- FLORIDA PAGE -->
@@ -1003,7 +1046,7 @@ let chamber = 'senate';
 let selectedMember = null;
 
 // ─── PAGE NAV ─────────────────────────────────────────────────────────────────
-const ALL_PAGES = ['members','bills','florida','about'];
+const ALL_PAGES = ['members','bills','map','florida','about'];
 
 function showPage(page) {
   ALL_PAGES.forEach(p => {
@@ -1018,6 +1061,10 @@ function showPage(page) {
   if (page === 'florida' && !window.flLoaded) {
     window.flLoaded = true;
     initFlorida();
+  }
+  if (page === 'map' && !window.mapLoaded) {
+    window.mapLoaded = true;
+    initMap();
   }
 }
 
@@ -1894,6 +1941,292 @@ function renderFLCounties() {
   `).join('');
 }
 
+
+// ─── INTERACTIVE US MAP ───────────────────────────────────────────────────────
+
+// Governor data (party + name)
+const governors = {
+  AL: { name: 'Kay Ivey', party: 'R' },
+  AK: { name: 'Mike Dunleavy', party: 'R' },
+  AZ: { name: 'Katie Hobbs', party: 'D' },
+  AR: { name: 'Sarah Huckabee Sanders', party: 'R' },
+  CA: { name: 'Gavin Newsom', party: 'D' },
+  CO: { name: 'Jared Polis', party: 'D' },
+  CT: { name: 'Ned Lamont', party: 'D' },
+  DE: { name: 'Matt Meyer', party: 'D' },
+  FL: { name: 'Ron DeSantis', party: 'R' },
+  GA: { name: 'Brian Kemp', party: 'R' },
+  HI: { name: 'Josh Green', party: 'D' },
+  ID: { name: 'Brad Little', party: 'R' },
+  IL: { name: 'JB Pritzker', party: 'D' },
+  IN: { name: 'Mike Braun', party: 'R' },
+  IA: { name: 'Kim Reynolds', party: 'R' },
+  KS: { name: 'Laura Kelly', party: 'D' },
+  KY: { name: 'Andy Beshear', party: 'D' },
+  LA: { name: 'Jeff Landry', party: 'R' },
+  ME: { name: 'Janet Mills', party: 'D' },
+  MD: { name: 'Wes Moore', party: 'D' },
+  MA: { name: 'Maura Healey', party: 'D' },
+  MI: { name: 'Gretchen Whitmer', party: 'D' },
+  MN: { name: 'Tim Walz', party: 'D' },
+  MS: { name: 'Tate Reeves', party: 'R' },
+  MO: { name: 'Mike Kehoe', party: 'R' },
+  MT: { name: 'Greg Gianforte', party: 'R' },
+  NE: { name: 'Jim Pillen', party: 'R' },
+  NV: { name: 'Joe Lombardo', party: 'R' },
+  NH: { name: 'Kelly Ayotte', party: 'R' },
+  NJ: { name: 'Phil Murphy', party: 'D' },
+  NM: { name: 'Michelle Lujan Grisham', party: 'D' },
+  NY: { name: 'Kathy Hochul', party: 'D' },
+  NC: { name: 'Josh Stein', party: 'D' },
+  ND: { name: 'Kelly Armstrong', party: 'R' },
+  OH: { name: 'Mike DeWine', party: 'R' },
+  OK: { name: 'Kevin Stitt', party: 'R' },
+  OR: { name: 'Tina Kotek', party: 'D' },
+  PA: { name: 'Josh Shapiro', party: 'D' },
+  RI: { name: 'Dan McKee', party: 'D' },
+  SC: { name: 'Henry McMaster', party: 'R' },
+  SD: { name: 'Kristi Noem', party: 'R' },
+  TN: { name: 'Bill Lee', party: 'R' },
+  TX: { name: 'Greg Abbott', party: 'R' },
+  UT: { name: 'Spencer Cox', party: 'R' },
+  VT: { name: 'Phil Scott', party: 'R' },
+  VA: { name: 'Glenn Youngkin', party: 'R' },
+  WA: { name: 'Bob Ferguson', party: 'D' },
+  WV: { name: 'Patrick Morrisey', party: 'R' },
+  WI: { name: 'Tony Evers', party: 'D' },
+  WY: { name: 'Mark Gordon', party: 'R' }
+};
+
+// State abbreviation to full name
+const stateNames = {
+  AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',
+  CO:'Colorado',CT:'Connecticut',DE:'Delaware',FL:'Florida',GA:'Georgia',
+  HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',
+  KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',
+  MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',
+  NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',
+  NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',
+  OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',
+  SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',
+  VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'
+};
+
+function initMap() {
+  // Load D3 and TopoJSON then render map
+  loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js', () => {
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js', () => {
+      renderUSMap();
+    });
+  });
+}
+
+function loadScript(src, callback) {
+  const s = document.createElement('script');
+  s.src = src;
+  s.onload = callback;
+  document.head.appendChild(s);
+}
+
+function getStatePartyColor(stateAbbr) {
+  // Determine state color based on senators
+  const stateSens = allMembers.filter(m => m.state === stateAbbr && m.chamber === 'senate');
+  if (stateSens.length === 0) return '#d4cfc6';
+  const dems = stateSens.filter(m => m.party === 'D').length;
+  const reps = stateSens.filter(m => m.party === 'R').length;
+  if (dems === 2) return '#bbcfed';
+  if (reps === 2) return '#f0bbbb';
+  return '#c8d8c0'; // split
+}
+
+async function renderUSMap() {
+  const svg = d3.select('#us-map');
+  const width = 960, height = 600;
+
+  const projection = d3.geoAlbersUsa()
+    .scale(1280)
+    .translate([width / 2, height / 2]);
+
+  const path = d3.geoPath().projection(projection);
+
+  // Load US map data
+  const us = await d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json');
+  const states = topojson.feature(us, us.objects.states);
+
+  // State FIPS to abbreviation map
+  const fipsToAbbr = {
+    '01':'AL','02':'AK','04':'AZ','05':'AR','06':'CA','08':'CO','09':'CT',
+    '10':'DE','12':'FL','13':'GA','15':'HI','16':'ID','17':'IL','18':'IN',
+    '19':'IA','20':'KS','21':'KY','22':'LA','23':'ME','24':'MD','25':'MA',
+    '26':'MI','27':'MN','28':'MS','29':'MO','30':'MT','31':'NE','32':'NV',
+    '33':'NH','34':'NJ','35':'NM','36':'NY','37':'NC','38':'ND','39':'OH',
+    '40':'OK','41':'OR','42':'PA','44':'RI','45':'SC','46':'SD','47':'TN',
+    '48':'TX','49':'UT','50':'VT','51':'VA','53':'WA','54':'WV','55':'WI',
+    '56':'WY'
+  };
+
+  // Draw states
+  svg.selectAll('path')
+    .data(states.features)
+    .enter()
+    .append('path')
+    .attr('d', path)
+    .attr('fill', d => {
+      const abbr = fipsToAbbr[String(d.id).padStart(2,'0')];
+      return getStatePartyColor(abbr);
+    })
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 1.5)
+    .attr('cursor', 'pointer')
+    .on('mousemove', function(event, d) {
+      const abbr = fipsToAbbr[String(d.id).padStart(2,'0')];
+      if (!abbr) return;
+      showMapPopup(event, abbr);
+      d3.select(this).attr('stroke', '#0a0a0f').attr('stroke-width', 2.5);
+    })
+    .on('mouseleave', function() {
+      hideMapPopup();
+      d3.select(this).attr('stroke', '#fff').attr('stroke-width', 1.5);
+    })
+    .on('click', function(event, d) {
+      const abbr = fipsToAbbr[String(d.id).padStart(2,'0')];
+      if (abbr) showStateDetail(abbr);
+    });
+
+  // Add state abbreviation labels
+  svg.selectAll('text')
+    .data(states.features)
+    .enter()
+    .append('text')
+    .attr('transform', d => {
+      const c = path.centroid(d);
+      return c ? `translate(${c})` : '';
+    })
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.35em')
+    .attr('font-size', '8px')
+    .attr('font-family', 'IBM Plex Mono, monospace')
+    .attr('fill', '#333')
+    .attr('pointer-events', 'none')
+    .text(d => fipsToAbbr[String(d.id).padStart(2,'0')] || '');
+
+  // Add legend
+  const legend = svg.append('g').attr('transform', 'translate(20, 540)');
+  [['#bbcfed','Both Democrat'],['#f0bbbb','Both Republican'],['#c8d8c0','Split']].forEach(([color, label], i) => {
+    legend.append('rect').attr('x', i * 130).attr('y', 0).attr('width', 14).attr('height', 14).attr('fill', color).attr('stroke','#999').attr('stroke-width',0.5);
+    legend.append('text').attr('x', i * 130 + 18).attr('y', 11).attr('font-size', '10px').attr('font-family','IBM Plex Mono,monospace').attr('fill','#666').text(label);
+  });
+}
+
+function showMapPopup(event, abbr) {
+  const popup = document.getElementById('map-popup');
+  const stateSens = allMembers.filter(m => m.state === abbr && m.chamber === 'senate');
+  const gov = governors[abbr];
+
+  document.getElementById('popup-state').textContent = stateNames[abbr] || abbr;
+
+  let html = '';
+
+  // Senators
+  if (stateSens.length) {
+    html += `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7670;margin-bottom:6px">US Senators</div>`;
+    stateSens.forEach(s => {
+      const partyColor = s.party === 'D' ? '#1a55a0' : s.party === 'R' ? '#c8392b' : '#5a8a3c';
+      html += `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          ${s.depiction ? `<img src="${s.depiction}" style="width:32px;height:40px;object-fit:cover;border:1px solid #d4cfc6;flex-shrink:0">` : '<div style="width:32px;height:40px;background:#d4cfc6;flex-shrink:0"></div>'}
+          <div>
+            <div style="font-size:13px;font-weight:600;font-family:'Playfair Display',serif">${s.first_name} ${s.last_name}</div>
+            <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${partyColor}">${s.party === 'D' ? 'Democrat' : s.party === 'R' ? 'Republican' : 'Independent'}</div>
+          </div>
+        </div>`;
+    });
+  } else {
+    html += `<div style="font-size:12px;color:#7a7670;margin-bottom:8px">Senator data loading...</div>`;
+  }
+
+  // Governor
+  if (gov) {
+    const govColor = gov.party === 'D' ? '#1a55a0' : '#c8392b';
+    html += `
+      <div style="border-top:1px solid #d4cfc6;padding-top:8px;margin-top:4px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7670;margin-bottom:6px">Governor</div>
+        <div style="font-size:13px;font-weight:600;font-family:'Playfair Display',serif">${gov.name}</div>
+        <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${govColor}">${gov.party === 'D' ? 'Democrat' : 'Republican'}</div>
+      </div>`;
+  }
+
+  html += `<div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7a7670;letter-spacing:0.06em">CLICK FOR FULL DETAILS</div>`;
+
+  document.getElementById('popup-content').innerHTML = html;
+
+  // Position popup near cursor but keep on screen
+  const x = Math.min(event.clientX + 15, window.innerWidth - 360);
+  const y = Math.min(event.clientY - 10, window.innerHeight - 300);
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+  popup.style.display = 'block';
+}
+
+function hideMapPopup() {
+  document.getElementById('map-popup').style.display = 'none';
+}
+
+function showStateDetail(abbr) {
+  const stateSens = allMembers.filter(m => m.state === abbr && m.chamber === 'senate');
+  const gov = governors[abbr];
+  const detail = document.getElementById('state-detail');
+  const content = document.getElementById('state-detail-content');
+
+  let html = `
+    <div style="border-top:2px solid var(--rule);padding-top:24px">
+      <div class="section-label">Selected State</div>
+      <div class="section-title">${stateNames[abbr] || abbr}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px">`;
+
+  // Senator cards
+  stateSens.forEach(s => {
+    const partyColor = s.party === 'D' ? 'var(--dem)' : s.party === 'R' ? 'var(--rep)' : 'var(--ind)';
+    html += `
+      <div style="background:white;border:1px solid var(--rule);padding:20px;cursor:pointer;border-left:4px solid ${partyColor}"
+           onclick="selectMember('${s.id}');showPage('members')">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          ${s.depiction ? `<img src="${s.depiction}" style="width:52px;height:65px;object-fit:cover;border:1px solid var(--rule)">` : '<div style="width:52px;height:65px;background:var(--rule)"></div>'}
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700">${s.first_name} ${s.last_name}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${partyColor};margin-top:2px">${s.party === 'D' ? 'Democrat' : s.party === 'R' ? 'Republican' : 'Independent'}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">US Senator</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent2)">CLICK TO VIEW FULL PROFILE →</div>
+      </div>`;
+  });
+
+  // Governor card
+  if (gov) {
+    const govColor = gov.party === 'D' ? 'var(--dem)' : 'var(--rep)';
+    html += `
+      <div style="background:white;border:1px solid var(--rule);padding:20px;border-left:4px solid ${govColor}">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:52px;height:65px;background:var(--rule);display:flex;align-items:center;justify-content:center;font-size:24px">🏛️</div>
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700">${gov.name}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${govColor};margin-top:2px">${gov.party === 'D' ? 'Democrat' : 'Republican'}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Governor of ${stateNames[abbr]}</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Governor profiles coming soon</div>
+      </div>`;
+  }
+
+  html += `</div></div>`;
+  content.innerHTML = html;
+  detail.style.display = 'block';
+  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Update showPage to init map
+const _origShowPage = showPage;
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 loadMembers();
 </script>
