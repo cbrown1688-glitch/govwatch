@@ -1382,13 +1382,16 @@ async function loadMemberBills(m) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    console.log('Bills data for', m.last_name, '- bioguide:', m.bioguideId, '- count:', data.sponsoredLegislation?.length, '- pagination:', data.pagination);
 
-    const bills = (data.sponsoredLegislation || [])
-      .filter(b => b.title && b.number && b.type)
+    const totalCount = data.pagination?.count || 0;
+    const raw = data.sponsoredLegislation || [];
+
+    // Less aggressive filter — only remove records with no title AND no number
+    const bills = raw
+      .filter(b => b.title || b.number)
       .map(b => ({
-        bill_id: `${b.type} ${b.number}`,
-        title: b.title,
+        bill_id: b.type && b.number ? `${b.type} ${b.number}` : '—',
+        title: b.title || 'Untitled Bill',
         introduced_date: b.introducedDate || '—',
         status: b.latestAction?.text?.toLowerCase().includes('became law') ? 'signed'
                : b.latestAction?.text?.toLowerCase().includes('passed') ? 'passed'
@@ -1399,18 +1402,20 @@ async function loadMemberBills(m) {
       }));
 
     if (bills.length === 0) {
-      // Show honest message instead of fake demo data
       document.getElementById('tab-bills').innerHTML = `
         <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:2">
-          No bill data returned from API for this member.<br>
-          <a href="https://www.congress.gov/member/${m.first_name}-${m.last_name}/${m.bioguideId}#tabs_5"
+          No bills returned from API for this member.<br>
+          <a href="https://www.congress.gov/member/${m.first_name}-${m.last_name}/${m.bioguideId}"
              target="_blank" style="color:var(--accent2)">
             View sponsored legislation on Congress.gov ↗
           </a>
         </div>`;
       return;
     }
-    renderBillsTab(bills, m.bioguideId);
+
+    // Pass total count so Load More knows the real number
+    renderBillsTab(bills, m.bioguideId, totalCount);
+
   } catch(e) {
     console.error('Bills fetch error:', e);
     document.getElementById('tab-bills').innerHTML = `
@@ -1448,17 +1453,19 @@ function buildBillUrl(b) {
 let billsShown = 10;
 let allBillsData = [];
 let currentBioguide = null;
+let totalBillsCount = 0;
 
-function renderBillsTab(bills, bioguideId) {
+function renderBillsTab(bills, bioguideId, totalCount) {
   allBillsData = bills;
   billsShown = 10;
   currentBioguide = bioguideId;
+  totalBillsCount = totalCount || bills.length;
   renderBillsPage();
 }
 
 function renderBillsPage() {
   const bills = allBillsData.slice(0, billsShown);
-  const total = allBillsData.length;
+  const total = totalBillsCount || allBillsData.length;
 
   if (!bills.length) {
     document.getElementById('tab-bills').innerHTML = '<p style="color:var(--muted);font-size:13px;">No bills found.</p>';
