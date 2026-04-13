@@ -1293,8 +1293,11 @@ function selectMember(id) {
 
   // Overview tab
   const photoHtml = m.depiction
-    ? `<img src="${m.depiction}" alt="${m.first_name} ${m.last_name}" style="width:80px;height:100px;object-fit:cover;border:1px solid var(--rule);margin-right:20px;flex-shrink:0">`
-    : `<div style="width:80px;height:100px;background:var(--rule);margin-right:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>`;
+    ? `<img src="${m.depiction}" alt="${m.first_name} ${m.last_name}" 
+        style="width:80px;height:100px;object-fit:cover;border:1px solid var(--rule);margin-right:20px;flex-shrink:0"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    + `<div style="width:80px;height:100px;background:var(--rule);margin-right:20px;flex-shrink:0;display:none;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--rule)">👤</div>`
+    : `<div style="width:80px;height:100px;background:var(--rule);margin-right:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--rule)">👤</div>`;
 
   document.getElementById('tab-overview').innerHTML = `
     <div style="display:flex;align-items:flex-start;margin-bottom:24px">
@@ -2393,11 +2396,13 @@ async function loadMemberFunding(m) {
 
     // Full money breakdown
     if (raised > 0) {
+      const transfers = totals.transfers_from_other_authorized_committee || 0;
       const sources = [
         { label: 'Small Donors (under $200)', amount: smallDonors, color: '#2d7a3e', desc: 'Grassroots individual donations' },
         { label: 'Large Donors (over $200)', amount: largeDonors, color: '#1a55a0', desc: 'Itemized individual donations' },
         { label: 'PAC Money', amount: pac, color: '#c8392b', desc: 'Political Action Committees' },
         { label: 'Party Committees', amount: party, color: '#8a5a00', desc: 'Political party contributions' },
+        { label: 'Transfers from Other Committees', amount: transfers, color: '#6a4c93', desc: 'Funds moved from other campaign accounts' },
         { label: 'Self-Funded', amount: self, color: '#555', desc: 'Candidate personal funds' },
       ].filter(s => s.amount > 0);
 
