@@ -2067,6 +2067,17 @@ const stateNames = {
   VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'
 };
 
+// Reverse lookup: full name -> abbreviation
+const stateAbbr = {};
+Object.entries(stateNames).forEach(([abbr, name]) => { stateAbbr[name] = abbr; });
+
+// Get state abbreviation from either format
+function toStateAbbr(state) {
+  if (!state) return null;
+  if (state.length === 2) return state.toUpperCase();
+  return stateAbbr[state] || null;
+}
+
 function recolorMap() {
   // Recolor all state paths after member data loads
   const svg = document.getElementById('us-map');
@@ -2102,11 +2113,12 @@ function loadScript(src, callback) {
   document.head.appendChild(s);
 }
 
-function getStatePartyColor(stateAbbr) {
-  const fullName = stateNames[stateAbbr] || stateAbbr;
-  const stateSens = allMembers.filter(m =>
-    (m.state === stateAbbr || m.state === fullName) && m.chamber === 'senate'
-  );
+function getStatePartyColor(stateAbbrParam) {
+  const fullName = stateNames[stateAbbrParam] || stateAbbrParam;
+  const stateSens = allMembers.filter(m => {
+    const mAbbr = toStateAbbr(m.state);
+    return (mAbbr === stateAbbrParam || m.state === fullName) && m.chamber === 'senate';
+  });
   if (stateSens.length === 0) return '#e8e4dc';
   if (stateSens.length === 1) {
     // Only one senator found - use their party color but lighter
@@ -2206,9 +2218,10 @@ function showMapPopup(event, abbr) {
   // State field from API is full name like "California" not "CA"
   // So we need to match by state abbr via stateNames lookup
   const fullStateName = stateNames[abbr] || abbr;
-  const stateSens = allMembers.filter(m =>
-    (m.state === abbr || m.state === fullStateName) && m.chamber === 'senate'
-  );
+  const stateSens = allMembers.filter(m => {
+    const mAbbr = toStateAbbr(m.state);
+    return (mAbbr === abbr || m.state === fullStateName) && m.chamber === 'senate';
+  });
 
   document.getElementById('popup-state').textContent = fullStateName;
 
@@ -2268,9 +2281,10 @@ function hideMapPopup() {
 
 function showStateDetail(abbr) {
   const fullStateName = stateNames[abbr] || abbr;
-  const stateSens = allMembers.filter(m =>
-    (m.state === abbr || m.state === fullStateName) && m.chamber === 'senate'
-  );
+  const stateSens = allMembers.filter(m => {
+    const mAbbr = toStateAbbr(m.state);
+    return (mAbbr === abbr || m.state === fullStateName) && m.chamber === 'senate';
+  });
   const detail = document.getElementById('state-detail');
   const content = document.getElementById('state-detail-content');
 
