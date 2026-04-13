@@ -731,6 +731,35 @@
   .type-session { background: #fef7e0; color: #8a5a00; }
   .type-committee { background: #f0f4e8; color: #3a6020; }
 
+  /* FLOATING BACK TO TOP */
+  #back-to-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--accent2);
+    color: white;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 10px 16px;
+    cursor: pointer;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    text-transform: uppercase;
+  }
+
+  #back-to-top.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #back-to-top:hover {
+    background: var(--ink);
+  }
+
   footer {
     background: var(--ink);
     color: #666;
@@ -1024,6 +1053,8 @@
 
   </div>
 </div>
+
+<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Top</button>
 
 <footer>
   GOVWATCH · FEDERAL: PROPUBLICA CONGRESS API & CONGRESS.GOV · FLORIDA: FLSENATE.GOV & MYFLORIDAHOUSE.GOV<br>
@@ -1351,7 +1382,7 @@ async function loadMemberBills(m) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    console.log('Bills data for', m.last_name, ':', data);
+    console.log('Bills data for', m.last_name, '- bioguide:', m.bioguideId, '- count:', data.sponsoredLegislation?.length, '- pagination:', data.pagination);
 
     const bills = (data.sponsoredLegislation || [])
       .filter(b => b.title && b.number && b.type)
@@ -2244,6 +2275,16 @@ function showStateDetail(abbr) {
 
 // Update showPage to init map
 const _origShowPage = showPage;
+// ─── BACK TO TOP ─────────────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('back-to-top');
+  if (window.scrollY > 300) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+});
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 loadMembers();
 </script>
