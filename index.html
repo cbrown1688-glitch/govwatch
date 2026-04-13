@@ -788,7 +788,7 @@
     <button class="active" onclick="showPage('members')">Federal: Members</button>
     <button onclick="showPage('bills')">Federal: Bills</button>
     <button onclick="showPage('map')">🗺️ State Map</button>
-    <button onclick="showPage('florida')">🌴 Florida</button>
+    <button onclick="showPage('florida')">🏛️ Your State</button>
     <button onclick="showPage('about')">About</button>
   </nav>
 </header>
@@ -863,6 +863,135 @@
   <div class="section-title">Recent Bills</div>
   <div id="bills-container"><div class="loading">Loading recent bills</div></div>
 </div>
+</div>
+
+<!-- ABOUT PAGE -->
+<div id="page-about" style="display:none">
+<div class="container" style="max-width:700px">
+  <div class="section-label">About This Project</div>
+  <div class="section-title">GovWatch</div>
+  <p style="margin-bottom:16px; line-height:1.8">GovWatch is a prototype civic transparency tool that aggregates publicly available data about the United States Congress. All data is sourced from official government APIs and the ProPublica Congress API.</p>
+  <p style="margin-bottom:16px; line-height:1.8">This is an early-stage prototype. Future versions will include Florida state legislature tracking, voting pattern analysis, committee hearing schedules, bill notifications, and more.</p>
+  <div style="margin-top:32px; padding:20px; border:1px solid var(--rule); background:white;">
+    <div class="section-label">Data Sources</div>
+    <ul style="margin-top:12px; padding-left:20px; font-size:13px; line-height:2; font-family:'IBM Plex Mono',monospace;">
+      <li>ProPublica Congress API</li>
+      <li>Congress.gov</li>
+      <li>GovTrack.us</li>
+      <li>US Senate & House official websites</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+
+<!-- MAP PAGE -->
+<div id="page-map" style="display:none">
+  <div class="container">
+    <div class="section-label">Interactive</div>
+    <div class="section-title">US State Map</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:24px;font-family:'IBM Plex Mono',monospace">
+      Hover over any state to see its senators and governor. Click to select.
+    </p>
+
+    <div style="position:relative">
+      <!-- Map container -->
+      <div id="map-container" style="width:100%;background:white;border:1px solid var(--rule);padding:16px;position:relative">
+        <svg id="us-map" viewBox="0 0 960 600" style="width:100%;height:auto;display:block"></svg>
+      </div>
+
+      <!-- Hover popup -->
+      <div id="map-popup" style="
+        display:none;
+        position:fixed;
+        background:white;
+        border:1px solid var(--rule);
+        border-left:4px solid var(--accent2);
+        padding:16px 20px;
+        min-width:280px;
+        max-width:340px;
+        z-index:1000;
+        box-shadow:0 4px 20px rgba(0,0,0,0.12);
+        pointer-events:none;
+      ">
+        <div id="popup-state" style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;border-bottom:1px solid var(--rule);padding-bottom:8px"></div>
+        <div id="popup-content"></div>
+      </div>
+    </div>
+
+    <!-- Selected state detail -->
+    <div id="state-detail" style="display:none;margin-top:32px">
+      <div id="state-detail-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- YOUR STATE PAGE -->
+<div id="page-florida" style="display:none">
+  <div style="background:var(--ink);color:var(--paper);padding:80px 32px;text-align:center;border-bottom:4px solid var(--accent)">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:16px">Coming Soon</div>
+    <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:900;line-height:1.1;margin-bottom:12px">
+      Your State.<br><span style="color:var(--accent)">Your Right to Know.</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#aaa;max-width:600px;margin:20px auto 0;line-height:1.8">
+      State-level transparency is coming to GovWatch. Track your governor, state senators, 
+      and representatives — their votes, their bills, and who funds them. 
+      Because accountability doesn't stop at the federal level.
+    </div>
+  </div>
+
+  <div class="container" style="max-width:800px;text-align:center;padding-top:60px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:48px">
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🏛️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">State Legislature</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Senators & Representatives for all 50 states</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">👤</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Governor Profiles</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Full profiles, funding, and track records</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">💰</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">State Campaign Finance</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Who funds your state officials</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🗳️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">Local Elections</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Upcoming races and candidate info</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">📋</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">State Bills & Laws</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Track legislation in your state</div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:24px;background:white">
+        <div style="font-size:32px;margin-bottom:12px">🗺️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px">District Maps</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Find your exact representatives by address</div>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--rule);padding:32px;background:white;margin-bottom:32px">
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:8px">Stay Informed</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px">
+        We're building state-level tracking now. Federal transparency is live today.
+      </div>
+      <a href="#" onclick="showPage('members');return false;" style="
+        display:inline-block;
+        font-family:'IBM Plex Mono',monospace;
+        font-size:11px;
+        letter-spacing:0.1em;
+        text-transform:uppercase;
+        padding:12px 28px;
+        background:var(--accent2);
+        color:white;
+        text-decoration:none;
+      ">Explore Federal Government Now →</a>
+    </div>
+  </div>
 </div>
 
 <!-- ABOUT PAGE -->
