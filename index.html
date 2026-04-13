@@ -1162,11 +1162,20 @@ async function loadMembers() {
       };
     });
     console.log(`Loaded ${allMembers.length} members for chamber: ${thisChamber}`);
+    // Log sample state values to debug map matching
+    const sampleStates = [...new Set(allMembers.slice(0,10).map(m => m.state))];
+    console.log('Sample state values:', sampleStates);
 
     populateStateFilter();
     renderMembers();
     // Recolor map if it's already open
     if (window.mapLoaded) recolorMap();
+    // Signal that members are ready
+    window.membersReady = true;
+    if (window.membersReadyCallback) {
+      window.membersReadyCallback();
+      window.membersReadyCallback = null;
+    }
 
   } catch (err) {
     console.error('Congress.gov API error:', err);
@@ -2070,10 +2079,18 @@ function recolorMap() {
 }
 
 function initMap() {
-  // Load D3 and TopoJSON then render map
+  // Show loading indicator while waiting
+  document.getElementById('us-map').innerHTML = '<text x="480" y="300" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" fill="#7a7670">Loading member data...</text>';
+
+  // Load D3 and TopoJSON
   loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js', () => {
     loadScript('https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js', () => {
-      renderUSMap();
+      // Wait for member data before rendering colors
+      if (window.membersReady) {
+        renderUSMap();
+      } else {
+        window.membersReadyCallback = renderUSMap;
+      }
     });
   });
 }
@@ -2087,16 +2104,20 @@ function loadScript(src, callback) {
 
 function getStatePartyColor(stateAbbr) {
   const fullName = stateNames[stateAbbr] || stateAbbr;
-  // Match by both abbr and full name since API may return either
   const stateSens = allMembers.filter(m =>
     (m.state === stateAbbr || m.state === fullName) && m.chamber === 'senate'
   );
-  if (stateSens.length === 0) return '#e8e4dc'; // no data - light neutral
+  if (stateSens.length === 0) return '#e8e4dc';
+  if (stateSens.length === 1) {
+    // Only one senator found - use their party color but lighter
+    const party = stateSens[0].party;
+    return party === 'D' ? '#c8d8f0' : party === 'R' ? '#f0c8c8' : '#c8e0c8';
+  }
   const dems = stateSens.filter(m => m.party === 'D').length;
   const reps = stateSens.filter(m => m.party === 'R').length;
-  if (dems === 2) return '#a8c4e8'; // blue - both dem
-  if (reps === 2) return '#e8a8a8'; // red - both rep
-  return '#a8c8a0'; // green - split
+  if (dems === 2) return '#a8c4e8';
+  if (reps === 2) return '#e8a8a8';
+  return '#a8c8a0'; // split
 }
 
 async function renderUSMap() {
