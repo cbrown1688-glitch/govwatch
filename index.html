@@ -1132,6 +1132,8 @@ async function loadMembers() {
 
     populateStateFilter();
     renderMembers();
+    // Recolor map if it's already open
+    if (window.mapLoaded) recolorMap();
 
   } catch (err) {
     console.error('Congress.gov API error:', err);
@@ -2012,6 +2014,17 @@ const stateNames = {
   VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'
 };
 
+function recolorMap() {
+  // Recolor all state paths after member data loads
+  const svg = document.getElementById('us-map');
+  if (!svg || !svg.querySelectorAll) return;
+  // Trigger a re-render by re-initializing if D3 is loaded
+  if (window.d3 && window.topojson) {
+    document.getElementById('us-map').innerHTML = '';
+    renderUSMap();
+  }
+}
+
 function initMap() {
   // Load D3 and TopoJSON then render map
   loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js', () => {
@@ -2029,14 +2042,17 @@ function loadScript(src, callback) {
 }
 
 function getStatePartyColor(stateAbbr) {
-  // Determine state color based on senators
-  const stateSens = allMembers.filter(m => m.state === stateAbbr && m.chamber === 'senate');
-  if (stateSens.length === 0) return '#d4cfc6';
+  const fullName = stateNames[stateAbbr] || stateAbbr;
+  // Match by both abbr and full name since API may return either
+  const stateSens = allMembers.filter(m =>
+    (m.state === stateAbbr || m.state === fullName) && m.chamber === 'senate'
+  );
+  if (stateSens.length === 0) return '#e8e4dc'; // no data - light neutral
   const dems = stateSens.filter(m => m.party === 'D').length;
   const reps = stateSens.filter(m => m.party === 'R').length;
-  if (dems === 2) return '#bbcfed';
-  if (reps === 2) return '#f0bbbb';
-  return '#c8d8c0'; // split
+  if (dems === 2) return '#a8c4e8'; // blue - both dem
+  if (reps === 2) return '#e8a8a8'; // red - both rep
+  return '#a8c8a0'; // green - split
 }
 
 async function renderUSMap() {
@@ -2120,49 +2136,51 @@ async function renderUSMap() {
 
 function showMapPopup(event, abbr) {
   const popup = document.getElementById('map-popup');
-  const stateSens = allMembers.filter(m => m.state === abbr && m.chamber === 'senate');
-  const gov = governors[abbr];
 
-  document.getElementById('popup-state').textContent = stateNames[abbr] || abbr;
+  // Use senators already loaded in allMembers
+  // State field from API is full name like "California" not "CA"
+  // So we need to match by state abbr via stateNames lookup
+  const fullStateName = stateNames[abbr] || abbr;
+  const stateSens = allMembers.filter(m =>
+    (m.state === abbr || m.state === fullStateName) && m.chamber === 'senate'
+  );
+
+  document.getElementById('popup-state').textContent = fullStateName;
 
   let html = '';
+  html += `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7670;margin-bottom:8px">US Senators</div>`;
 
-  // Senators
   if (stateSens.length) {
-    html += `<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7670;margin-bottom:6px">US Senators</div>`;
     stateSens.forEach(s => {
       const partyColor = s.party === 'D' ? '#1a55a0' : s.party === 'R' ? '#c8392b' : '#5a8a3c';
+      const partyLabel = s.party === 'D' ? 'Democrat' : s.party === 'R' ? 'Republican' : 'Independent';
       html += `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          ${s.depiction ? `<img src="${s.depiction}" style="width:32px;height:40px;object-fit:cover;border:1px solid #d4cfc6;flex-shrink:0">` : '<div style="width:32px;height:40px;background:#d4cfc6;flex-shrink:0"></div>'}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0ede8">
+          ${s.depiction
+            ? `<img src="${s.depiction}" style="width:36px;height:45px;object-fit:cover;border:1px solid #d4cfc6;flex-shrink:0">`
+            : `<div style="width:36px;height:45px;background:#d4cfc6;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>`}
           <div>
-            <div style="font-size:13px;font-weight:600;font-family:'Playfair Display',serif">${s.first_name} ${s.last_name}</div>
-            <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${partyColor}">${s.party === 'D' ? 'Democrat' : s.party === 'R' ? 'Republican' : 'Independent'}</div>
+            <div style="font-size:14px;font-weight:700;font-family:'Playfair Display',serif;line-height:1.2">${s.first_name} ${s.last_name}</div>
+            <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${partyColor};margin-top:2px;font-weight:600">${partyLabel}</div>
           </div>
+          <div style="margin-left:auto;width:10px;height:10px;border-radius:50%;background:${partyColor};flex-shrink:0"></div>
         </div>`;
     });
   } else {
-    html += `<div style="font-size:12px;color:#7a7670;margin-bottom:8px">Senator data loading...</div>`;
+    // Check if members are still loading
+    if (allMembers.length === 0) {
+      html += `<div style="font-size:12px;color:#7a7670;font-family:'IBM Plex Mono',monospace">Loading member data...</div>`;
+    } else {
+      html += `<div style="font-size:12px;color:#7a7670;font-family:'IBM Plex Mono',monospace">No senator data for ${abbr}</div>`;
+    }
   }
 
-  // Governor
-  if (gov) {
-    const govColor = gov.party === 'D' ? '#1a55a0' : '#c8392b';
-    html += `
-      <div style="border-top:1px solid #d4cfc6;padding-top:8px;margin-top:4px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7670;margin-bottom:6px">Governor</div>
-        <div style="font-size:13px;font-weight:600;font-family:'Playfair Display',serif">${gov.name}</div>
-        <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${govColor}">${gov.party === 'D' ? 'Democrat' : 'Republican'}</div>
-      </div>`;
-  }
-
-  html += `<div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7a7670;letter-spacing:0.06em">CLICK FOR FULL DETAILS</div>`;
+  html += `<div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7a7670;letter-spacing:0.06em;text-transform:uppercase">Click state for full details</div>`;
 
   document.getElementById('popup-content').innerHTML = html;
 
-  // Position popup near cursor but keep on screen
   const x = Math.min(event.clientX + 15, window.innerWidth - 360);
-  const y = Math.min(event.clientY - 10, window.innerHeight - 300);
+  const y = Math.min(event.clientY - 10, window.innerHeight - 280);
   popup.style.left = x + 'px';
   popup.style.top = y + 'px';
   popup.style.display = 'block';
@@ -2173,8 +2191,10 @@ function hideMapPopup() {
 }
 
 function showStateDetail(abbr) {
-  const stateSens = allMembers.filter(m => m.state === abbr && m.chamber === 'senate');
-  const gov = governors[abbr];
+  const fullStateName = stateNames[abbr] || abbr;
+  const stateSens = allMembers.filter(m =>
+    (m.state === abbr || m.state === fullStateName) && m.chamber === 'senate'
+  );
   const detail = document.getElementById('state-detail');
   const content = document.getElementById('state-detail-content');
 
@@ -2202,22 +2222,8 @@ function showStateDetail(abbr) {
       </div>`;
   });
 
-  // Governor card
-  if (gov) {
-    const govColor = gov.party === 'D' ? 'var(--dem)' : 'var(--rep)';
-    html += `
-      <div style="background:white;border:1px solid var(--rule);padding:20px;border-left:4px solid ${govColor}">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:52px;height:65px;background:var(--rule);display:flex;align-items:center;justify-content:center;font-size:24px">🏛️</div>
-          <div>
-            <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700">${gov.name}</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${govColor};margin-top:2px">${gov.party === 'D' ? 'Democrat' : 'Republican'}</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Governor of ${stateNames[abbr]}</div>
-          </div>
-        </div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Governor profiles coming soon</div>
-      </div>`;
-  }
+  // Governor card placeholder - coming soon
+  // html += governor card here
 
   html += `</div></div>`;
   content.innerHTML = html;
