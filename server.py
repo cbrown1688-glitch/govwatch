@@ -258,7 +258,7 @@ Official Summary: {official_summary[:3000] if official_summary else 'Not availab
             'https://api.anthropic.com/v1/messages',
             headers={
                 'Content-Type': 'application/json',
-                'x-api-key': os.environ.get('ANTHROPIC_API_KEY', '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'),
+                'x-api-key': os.environ.get('ANTHROPIC_API_KEY', ''),
                 'anthropic-version': '2023-06-01'
             },
             json={
