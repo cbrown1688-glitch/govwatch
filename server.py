@@ -214,6 +214,97 @@ def get_member_funding(bioguide_id):
         print(f'Funding error: {e}')
         return jsonify({'error': str(e), 'candidate': None, 'totals': {}, 'industries': []}), 200
 
+@app.route('/api/bill/summary')
+def get_bill_summary():
+    try:
+        bill_type = request.args.get('type', '')
+        bill_number = request.args.get('number', '')
+        bill_congress = request.args.get('congress', CONGRESS)
+        bill_title = request.args.get('title', '')
+
+        # Fetch bill details from Congress.gov
+        bill_url = f'{CONGRESS_BASE}/bill/{bill_congress}/{bill_type.lower()}/{bill_number}?api_key={API_KEY}&{FMT}'
+        bill_r = requests.get(bill_url, timeout=TIMEOUT)
+        bill_data = bill_r.json().get('bill', {})
+
+        # Get bill text summary if available
+        summary_url = f'{CONGRESS_BASE}/bill/{bill_congress}/{bill_type.lower()}/{bill_number}/summaries?api_key={API_KEY}&{FMT}'
+        summary_r = requests.get(summary_url, timeout=TIMEOUT)
+        summaries = summary_r.json().get('summaries', [])
+        official_summary = summaries[-1].get('text', '') if summaries else ''
+
+        # Clean HTML from official summary
+        import re
+        official_summary = re.sub(r'<[^>]+>', ' ', official_summary).strip()
+
+        # Build context for Claude
+        latest_action = bill_data.get('latestAction', {}).get('text', '')
+        policy_area = bill_data.get('policyArea', {}).get('name', '')
+        sponsors = bill_data.get('sponsors', [{}])
+        sponsor_name = f"{sponsors[0].get('firstName', '')} {sponsors[0].get('lastName', '')}" if sponsors else ''
+        sponsor_party = sponsors[0].get('party', '') if sponsors else ''
+
+        context = f"""
+Bill: {bill_type} {bill_number} - {bill_title}
+Policy Area: {policy_area}
+Sponsor: {sponsor_name} ({sponsor_party})
+Latest Action: {latest_action}
+Official Summary: {official_summary[:3000] if official_summary else 'Not available'}
+"""
+
+        # Call Claude API for analysis
+        import json as json_lib
+        claude_response = requests.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'Content-Type': 'application/json',
+                'x-api-key': os.environ.get('ANTHROPIC_API_KEY', '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'),
+                'anthropic-version': '2023-06-01'
+            },
+            json={
+                'model': 'claude-sonnet-4-6',
+                'max_tokens': 1000,
+                'system': '''You are a nonpartisan civic transparency tool. Analyze bills objectively.
+Return ONLY valid JSON with these exact fields:
+{
+  "plain_summary": "2-3 sentence plain English summary of what this bill does",
+  "teaser": "First sentence only - a hook that makes the reader want to know more",
+  "key_provisions": ["provision 1", "provision 2", "provision 3"],
+  "hidden_provisions": ["any provisions that seem unrelated to the bill title or tacked on"],
+  "who_benefits": "Plain assessment of who this bill helps and who it does not",
+  "complexity": "simple|moderate|complex"
+}
+If no hidden provisions exist, return an empty array for hidden_provisions.''',
+                'messages': [{'role': 'user', 'content': f'Analyze this bill:\n{context}'}]
+            },
+            timeout=30
+        )
+
+        print(f'Claude status: {claude_response.status_code}')
+        print(f'Claude response: {claude_response.text[:500]}')
+        claude_data = claude_response.json()
+        text = ''.join(b.get('text', '') for b in claude_data.get('content', []))
+        text = re.sub(r'```json|```', '', text).strip()
+        analysis = json_lib.loads(text)
+
+        return jsonify({
+            'success': True,
+            'analysis': analysis,
+            'bill_info': {
+                'title': bill_title,
+                'type': bill_type,
+                'number': bill_number,
+                'policy_area': policy_area,
+                'sponsor': sponsor_name,
+                'sponsor_party': sponsor_party,
+                'latest_action': latest_action
+            }
+        })
+
+    except Exception as e:
+        print(f'Bill summary error: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 200
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

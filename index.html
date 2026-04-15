@@ -1763,7 +1763,18 @@ function renderBillsPage() {
           <td><span class="bill-id">${b.url
             ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>`
             : b.bill_id}</span></td>
-          <td class="bill-title">${b.title}</td>
+          <td class="bill-title">
+            <div>${b.title}</div>
+            <div style="margin-top:6px">
+              <button onclick="summarizeBill('${b.bill_id}', '${b.title.replace(/'/g, '').replace(/"/g, '')}', ${b.congress || 119})"
+                style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;
+                text-transform:uppercase;padding:4px 10px;border:1px solid var(--accent2);
+                background:white;color:var(--accent2);cursor:pointer;">
+                🤖 AI Summary
+              </button>
+            </div>
+            <div id="summary-${b.bill_id.replace(/\s/g,'-')}" style="display:none;margin-top:10px"></div>
+          </td>
           <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap">${b.introduced_date}</td>
           <td><span class="status-pill status-${b.status}">${b.status}</span></td>
         </tr>`).join('')}
@@ -2820,6 +2831,133 @@ async function loadMemberFunding(m) {
       <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
         Could not load funding data. <a href="https://www.fec.gov" target="_blank" style="color:var(--accent2)">Visit FEC.gov ↗</a>
       </div>`;
+  }
+}
+
+// ─── BILL SUMMARY ────────────────────────────────────────────────────────────
+const summaryCache = {}; // cache summaries so we don't re-fetch
+
+async function summarizeBill(billId, title, congress) {
+  const divId = 'summary-' + billId.replace(/\s/g, '-');
+  const div = document.getElementById(divId);
+  if (!div) return;
+
+  // If already loaded, just toggle
+  if (summaryCache[billId]) {
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  // Show loading
+  div.style.display = 'block';
+  div.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:12px 0">
+    <span style="animation: dots 1s infinite">Analyzing bill with AI</span>
+  </div>`;
+
+  try {
+    // Parse bill type and number from bill_id like "HR 1234" or "S 567"
+    const parts = billId.trim().split(/\s+/);
+    const billType = parts[0];
+    const billNumber = parts[1];
+
+    const url = `/api/bill/summary?type=${billType}&number=${billNumber}&congress=${congress}&title=${encodeURIComponent(title)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.success || !data.analysis) {
+      div.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:8px 0">
+        Could not generate summary for this bill.
+      </div>`;
+      return;
+    }
+
+    const a = data.analysis;
+    summaryCache[billId] = a;
+
+    // FREE TIER — show teaser only
+    const isSubscriber = false; // TODO: replace with real auth check
+
+    div.innerHTML = `
+      <div style="background:#f8f7f4;border-left:3px solid var(--accent2);padding:16px;margin-top:8px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;
+          text-transform:uppercase;color:var(--accent2);margin-bottom:8px">
+          🤖 AI Analysis
+        </div>
+
+        <!-- TEASER - visible to all -->
+        <p style="font-size:13px;line-height:1.7;margin-bottom:12px">
+          ${a.teaser}
+        </p>
+
+        ${isSubscriber ? `
+          <!-- FULL SUMMARY - subscribers only -->
+          <p style="font-size:13px;line-height:1.7;margin-bottom:16px">${a.plain_summary}</p>
+
+          ${a.key_provisions?.length ? `
+            <div style="margin-bottom:16px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+                text-transform:uppercase;color:var(--muted);margin-bottom:8px">Key Provisions</div>
+              ${a.key_provisions.map(p => `
+                <div style="display:flex;gap:8px;margin-bottom:6px;font-size:13px">
+                  <span style="color:var(--accent2);flex-shrink:0">→</span>
+                  <span>${p}</span>
+                </div>`).join('')}
+            </div>` : ''}
+
+          ${a.hidden_provisions?.length ? `
+            <div style="margin-bottom:16px;background:#fef7e0;padding:12px;border-left:3px solid #c8a228">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+                text-transform:uppercase;color:#8a5a00;margin-bottom:8px">⚠️ Notable Provisions</div>
+              ${a.hidden_provisions.map(p => `
+                <div style="display:flex;gap:8px;margin-bottom:6px;font-size:13px">
+                  <span style="color:#c8a228;flex-shrink:0">!</span>
+                  <span>${p}</span>
+                </div>`).join('')}
+            </div>` : ''}
+
+          ${a.who_benefits ? `
+            <div style="margin-bottom:8px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+                text-transform:uppercase;color:var(--muted);margin-bottom:6px">Who This Affects</div>
+              <p style="font-size:13px;line-height:1.7">${a.who_benefits}</p>
+            </div>` : ''}
+
+        ` : `
+          <!-- PAYWALL - non-subscribers -->
+          <div style="position:relative;overflow:hidden;margin-bottom:12px">
+            <p style="font-size:13px;line-height:1.7;filter:blur(4px);user-select:none;color:#666">
+              ${a.plain_summary} The bill includes several key provisions that would significantly 
+              impact how federal agencies operate and allocate resources across multiple sectors.
+            </p>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:60px;
+              background:linear-gradient(transparent, #f8f7f4)"></div>
+          </div>
+          <div style="text-align:center;padding:16px 0 8px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px">
+              Full analysis requires a GovWatch subscription
+            </div>
+            <button style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+              text-transform:uppercase;padding:10px 24px;background:var(--accent);color:white;
+              border:none;cursor:pointer;">
+              Unlock Full Analysis →
+            </button>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px">
+              Includes: Full summary · Key provisions · Hidden provisions · Who benefits
+            </div>
+          </div>
+        `}
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);
+          margin-top:12px;padding-top:8px;border-top:1px solid var(--rule)">
+          AI-generated analysis · Nonpartisan · Always verify with official sources
+        </div>
+      </div>`;
+
+  } catch(e) {
+    console.error('Summary error:', e);
+    div.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:8px 0">
+      Error loading summary. Please try again.
+    </div>`;
   }
 }
 
