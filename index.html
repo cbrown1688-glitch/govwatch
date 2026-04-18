@@ -1820,39 +1820,72 @@ async function loadMoreBills() {
 
 // ─── LOAD VOTES ───────────────────────────────────────────────────────────────
 async function loadMemberVotes(m) {
-  // Congress.gov API doesn't expose per-member vote history yet
-  // Show a direct link to their full voting record instead
-  const bioguide = m.bioguideId;
-  // Correct congress.gov member page URL format
-  const namePart = `${m.first_name}-${m.last_name}`.toLowerCase().replace(/[^a-z-]/g, '');
-  const votesUrl = `https://www.congress.gov/member/${namePart}/${bioguide}`;
-  document.getElementById('tab-votes').innerHTML = `
-    <div style="padding:20px 0">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8">
-        Per-member vote history is not yet available via the Congress.gov API.<br>
-        ${m.first_name} ${m.last_name} has cast <strong style="color:var(--ink)">${m.total_votes}</strong> votes this Congress.
+  document.getElementById('tab-votes').innerHTML = '<div class="loading">Loading voting records</div>';
+
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/votes`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error || !data.votes || data.votes.length === 0) {
+      // Fall back to Congress.gov link
+      const namePart = `${m.first_name}-${m.last_name}`.toLowerCase().replace(/[^a-z-]/g, '');
+      const votesUrl = `https://www.congress.gov/member/${namePart}/${m.bioguideId}`;
+      document.getElementById('tab-votes').innerHTML = `
+        <div style="padding:20px 0">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.8">
+            Vote history not available. ${m.first_name} ${m.last_name} has cast <strong style="color:var(--ink)">${m.total_votes}</strong> votes this Congress.
+          </div>
+          <a href="${votesUrl}" target="_blank" style="
+            display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+            letter-spacing:0.08em;text-transform:uppercase;padding:10px 20px;
+            background:var(--accent2);color:white;text-decoration:none;">
+            View Full Voting Record on Congress.gov ↗
+          </a>
+        </div>`;
+      return;
+    }
+
+    const total = data.total || 0;
+    const govtrackUrl = `https://www.govtrack.us/congress/members/${m.bioguideId}`;
+
+    const cls = p => {
+      if (p === 'Yea' || p === 'Yes' || p === '+') return 'vote-yes';
+      if (p === 'Nay' || p === 'No' || p === '-') return 'vote-no';
+      return 'vote-not';
+    };
+
+    document.getElementById('tab-votes').innerHTML = `
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <span>Showing 20 of ${total.toLocaleString()} recorded votes · Source: GovTrack.us</span>
+        <a href="${govtrackUrl}" target="_blank" style="color:var(--accent2)">Full record ↗</a>
       </div>
-      <a href="${votesUrl}" target="_blank" style="
-        display:inline-block;
-        font-family:'IBM Plex Mono',monospace;
-        font-size:11px;
-        letter-spacing:0.08em;
-        text-transform:uppercase;
-        padding:10px 20px;
-        background:var(--accent2);
-        color:white;
-        text-decoration:none;
-        margin-bottom:24px;
-        margin-right:12px;
-      ">View Full Voting Record on Congress.gov ↗</a>
-      <div style="margin-top:24px;border-top:1px solid var(--rule);padding-top:20px">
-        <div class="section-label" style="margin-bottom:12px">Recent Congressional Votes (Chamber-Wide)</div>
-        <div id="chamber-votes-list"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">Loading...</span></div>
-      </div>
-    </div>
-  `;
-  // Also load recent chamber votes for context
-  loadChamberVotes(m);
+      ${data.votes.map(v => `
+        <div class="vote-row">
+          <span class="vote-result ${cls(v.position)}">${v.position}</span>
+          <span class="vote-desc">
+            ${v.description}
+            ${v.result ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:8px">(${v.result})</span>` : ''}
+          </span>
+          <span class="vote-date">${v.date}</span>
+        </div>
+      `).join('')}
+      <div style="margin-top:16px;text-align:center">
+        <a href="${govtrackUrl}" target="_blank" style="
+          display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+          letter-spacing:0.08em;text-transform:uppercase;padding:10px 20px;
+          background:var(--accent2);color:white;text-decoration:none;">
+          View All ${total.toLocaleString()} Votes on GovTrack ↗
+        </a>
+      </div>`;
+
+  } catch(e) {
+    console.error('Votes error:', e);
+    document.getElementById('tab-votes').innerHTML = `
+      <div style="padding:20px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        Could not load votes. <a href="https://www.govtrack.us" target="_blank" style="color:var(--accent2)">Visit GovTrack.us ↗</a>
+      </div>`;
+  }
 }
 
 async function loadChamberVotes(m) {
