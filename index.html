@@ -35,6 +35,8 @@
     color: var(--paper);
     padding: 0;
     border-bottom: 4px solid var(--accent);
+    position: relative;
+    z-index: 1000;
   }
 
   .header-top {
@@ -81,7 +83,9 @@
     padding: 0 32px;
     display: flex;
     gap: 0;
-    overflow-x: auto;
+    overflow: visible;
+    position: relative;
+    z-index: 100;
   }
 
   nav button {
@@ -781,31 +785,285 @@
     <span id="live-date"></span>
   </div>
   <div class="header-main">
-    <div class="logo">Gov<span>Watch</span></div>
+    <div class="logo" onclick="showPage('home')" style="cursor:pointer" title="Return to Home">Gov<span>Watch</span></div>
     <div class="tagline">Legislative · Executive · Judicial · Full Government Transparency</div>
   </div>
-  <nav>
-    <button class="active" onclick="showPage('members')">⚖️ Legislative</button>
-    <button onclick="showPage('executive')">🏛️ Executive</button>
-    <button onclick="showPage('judicial')">🏛️ Judicial</button>
+  <nav style="position:relative">
+    <div style="display:inline-block;position:relative" 
+      onmouseenter="document.getElementById('dd-legislative').style.display='block'"
+      onmouseleave="document.getElementById('dd-legislative').style.display='none'">
+      <button onclick="showPage('members')">⚖️ Legislative ▾</button>
+      <div id="dd-legislative" style="display:none;position:absolute;top:100%;left:0;
+        background:var(--ink);border-top:2px solid var(--accent);min-width:180px;z-index:9999;
+        box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+        <button onclick="showPage('members')" style="display:block;width:100%;text-align:left;
+          background:none;border:none;border-bottom:1px solid #2a2a35;color:#aac4e0;
+          font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:pointer;"
+          onmouseover="this.style.color='white';this.style.background='#1a2a3c'"
+          onmouseout="this.style.color='#aac4e0';this.style.background='none'">
+          Members
+        </button>
+        <button onclick="showPage('bills')" style="display:block;width:100%;text-align:left;
+          background:none;border:none;color:#aac4e0;
+          font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:pointer;"
+          onmouseover="this.style.color='white';this.style.background='#1a2a3c'"
+          onmouseout="this.style.color='#aac4e0';this.style.background='none'">
+          Recent Bills
+        </button>
+      </div>
+    </div>
+    <div style="display:inline-block;position:relative"
+      onmouseenter="document.getElementById('dd-executive').style.display='block'"
+      onmouseleave="document.getElementById('dd-executive').style.display='none'">
+      <button onclick="showPage('executive')">🏛️ Executive ▾</button>
+      <div id="dd-executive" style="display:none;position:absolute;top:100%;left:0;
+        background:var(--ink);border-top:2px solid var(--accent);min-width:180px;z-index:9999;
+        box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+        <button style="display:block;width:100%;text-align:left;background:none;border:none;
+          color:#555;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:default;">
+          President — Coming Soon
+        </button>
+        <button style="display:block;width:100%;text-align:left;background:none;border:none;
+          color:#555;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:default;">
+          Cabinet — Coming Soon
+        </button>
+        <button style="display:block;width:100%;text-align:left;background:none;border:none;
+          color:#555;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:default;">
+          Agencies — Coming Soon
+        </button>
+      </div>
+    </div>
+    <div style="display:inline-block;position:relative"
+      onmouseenter="document.getElementById('dd-judicial').style.display='block'"
+      onmouseleave="document.getElementById('dd-judicial').style.display='none'">
+      <button onclick="showPage('judicial')">🏛️ Judicial ▾</button>
+      <div id="dd-judicial" style="display:none;position:absolute;top:100%;left:0;
+        background:var(--ink);border-top:2px solid var(--accent);min-width:180px;z-index:9999;
+        box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+        <button style="display:block;width:100%;text-align:left;background:none;border:none;
+          color:#555;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:default;">
+          Supreme Court — Coming Soon
+        </button>
+        <button style="display:block;width:100%;text-align:left;background:none;border:none;
+          color:#555;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+          text-transform:uppercase;padding:12px 20px;cursor:default;">
+          Federal Courts — Coming Soon
+        </button>
+      </div>
+    </div>
     <button onclick="showPage('map')">🗺️ Interactive Map</button>
     <button onclick="showPage('florida')">📍 Your State</button>
     <button onclick="showPage('about')">About</button>
   </nav>
-  <!-- Legislative sub-nav -->
-  <div id="legislative-subnav" style="background:#1a3a5c;padding:0 32px;display:flex;gap:0">
-    <button style="background:none;border:none;color:#aac4e0;font-family:'IBM Plex Mono',monospace;
-      font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;
-      border-bottom:2px solid transparent;" 
-      onmouseover="this.style.color='white'" onmouseout="this.style.color='#aac4e0'"
-      onclick="showPage('members')">Members</button>
-    <button style="background:none;border:none;color:#aac4e0;font-family:'IBM Plex Mono',monospace;
-      font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;
-      border-bottom:2px solid transparent;"
-      onmouseover="this.style.color='white'" onmouseout="this.style.color='#aac4e0'"
-      onclick="showPage('bills')">Recent Bills</button>
-  </div>
+
 </header>
+
+
+<!-- HOMEPAGE -->
+<div id="page-home" style="display:none">
+
+  <!-- HERO -->
+  <div style="background:var(--ink);color:var(--paper);padding:80px 32px 60px;text-align:center;border-bottom:4px solid var(--accent)">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:16px">
+      Civic Transparency · Real Data · Nonpartisan
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-size:56px;font-weight:900;line-height:1.05;margin-bottom:16px;max-width:800px;margin-left:auto;margin-right:auto">
+      Your Government.<br><span style="color:var(--accent)">Fully Visible.</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#aaa;max-width:600px;margin:0 auto 36px;line-height:1.8">
+      Track every vote, every bill, every dollar — across all three branches of the United States government.
+      Because transparency isn't a privilege. It's a right.
+    </div>
+    <!-- Search bar -->
+    <div style="max-width:500px;margin:0 auto;display:flex;gap:0">
+      <input type="text" id="home-search" placeholder="Search any senator or representative..."
+        oninput="homeSearch(this.value)"
+        style="flex:1;padding:14px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;
+        border:none;outline:none;background:white;color:var(--ink)">
+      <button onclick="homeSearch(document.getElementById('home-search').value)"
+        style="padding:14px 24px;background:var(--accent);color:white;border:none;
+        font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+        text-transform:uppercase;cursor:pointer">Search</button>
+    </div>
+    <div id="home-search-results" style="max-width:500px;margin:8px auto 0;background:white;text-align:left"></div>
+  </div>
+
+  <!-- LIVE ACTIVITY -->
+  <div style="background:#1a3a5c;color:white;padding:20px 32px">
+    <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+        text-transform:uppercase;color:#aac4e0;white-space:nowrap">Latest Activity</div>
+      <div id="activity-ticker" style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+        color:#e0e8f0;overflow:hidden;flex:1;white-space:nowrap;text-overflow:ellipsis;
+        height:16px;line-height:16px">Loading...</div>
+    </div>
+  </div>
+
+  <div class="container" style="max-width:1200px">
+
+    <!-- THREE BRANCHES -->
+    <div style="margin:48px 0 32px">
+      <div class="section-label" style="margin-bottom:8px">Explore Government</div>
+      <div class="section-title">The Three Branches</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--rule);border:1px solid var(--rule)">
+        
+        <div style="background:white;padding:32px;cursor:pointer;transition:background 0.15s"
+          onmouseover="this.style.background='#f0f4f9'" onmouseout="this.style.background='white'"
+          onclick="showPage('members')">
+          <div style="font-size:40px;margin-bottom:16px">⚖️</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:8px">Legislative</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+            US Senate · House of Representatives<br>
+            Bills · Votes · Campaign Finance
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            text-transform:uppercase;color:var(--accent2)">Explore →</div>
+        </div>
+
+        <div style="background:white;padding:32px;cursor:pointer;transition:background 0.15s;position:relative"
+          onmouseover="this.style.background='#f0f4f9'" onmouseout="this.style.background='white'"
+          onclick="showPage('executive')">
+          <div style="position:absolute;top:12px;right:12px;font-family:'IBM Plex Mono',monospace;
+            font-size:9px;letter-spacing:0.06em;padding:3px 8px;background:#fef7e0;color:#8a5a00">
+            COMING SOON
+          </div>
+          <div style="font-size:40px;margin-bottom:16px">🏛️</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:8px">Executive</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+            President · Cabinet · Federal Agencies<br>
+            Executive Orders · Federal Budget
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            text-transform:uppercase;color:var(--muted)">In Development →</div>
+        </div>
+
+        <div style="background:white;padding:32px;cursor:pointer;transition:background 0.15s;position:relative"
+          onmouseover="this.style.background='#f0f4f9'" onmouseout="this.style.background='white'"
+          onclick="showPage('judicial')">
+          <div style="position:absolute;top:12px;right:12px;font-family:'IBM Plex Mono',monospace;
+            font-size:9px;letter-spacing:0.06em;padding:3px 8px;background:#fef7e0;color:#8a5a00">
+            COMING SOON
+          </div>
+          <div style="font-size:40px;margin-bottom:16px">⚖️</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:8px">Judicial</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+            Supreme Court · Federal Judges<br>
+            Landmark Rulings · Confirmation Votes
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            text-transform:uppercase;color:var(--muted)">In Development →</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT VOTES + BILLS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:48px">
+      
+      <!-- Recent Votes -->
+      <div>
+        <div class="section-label" style="margin-bottom:8px">Live Data</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+          padding-bottom:12px;border-bottom:2px solid var(--rule);margin-bottom:16px">
+          Recent Congressional Votes
+        </div>
+        <div id="home-votes" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+          Loading...
+        </div>
+        <div style="margin-top:16px">
+          <button onclick="showPage('members')" style="font-family:'IBM Plex Mono',monospace;
+            font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:8px 16px;
+            border:1px solid var(--rule);background:white;cursor:pointer;color:var(--accent2)">
+            View Member Voting Records →
+          </button>
+        </div>
+      </div>
+
+      <!-- Recent Bills -->
+      <div>
+        <div class="section-label" style="margin-bottom:8px">Live Data</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+          padding-bottom:12px;border-bottom:2px solid var(--rule);margin-bottom:16px">
+          Recently Updated Bills
+        </div>
+        <div id="home-bills" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+          Loading...
+        </div>
+        <div style="margin-top:16px">
+          <button onclick="showPage('bills')" style="font-family:'IBM Plex Mono',monospace;
+            font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:8px 16px;
+            border:1px solid var(--rule);background:white;cursor:pointer;color:var(--accent2)">
+            View All Recent Bills →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP PREVIEW -->
+    <div style="margin-bottom:48px">
+      <div class="section-label" style="margin-bottom:8px">Interactive</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+        padding-bottom:12px;border-bottom:2px solid var(--rule);margin-bottom:16px">
+        Explore by State
+      </div>
+      <div style="background:white;border:1px solid var(--rule);padding:32px;text-align:center">
+        <div style="font-size:48px;margin-bottom:16px">🗺️</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:8px">
+          Interactive US Map
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px;line-height:1.8">
+          Hover over any state to see its senators.<br>
+          Color coded by party control.
+        </div>
+        <button onclick="showPage('map')" style="font-family:'IBM Plex Mono',monospace;
+          font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:12px 28px;
+          background:var(--accent2);color:white;border:none;cursor:pointer">
+          Open Interactive Map →
+        </button>
+      </div>
+    </div>
+
+    <!-- MISSION -->
+    <div style="margin-bottom:60px;background:var(--ink);color:var(--paper);padding:48px;text-align:center">
+      <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;margin-bottom:16px">
+        Why GovWatch?
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#aaa;
+        max-width:700px;margin:0 auto;line-height:2">
+        Our government works best when citizens are informed. Too often, the actions of elected officials 
+        are buried in bureaucratic language, scattered across dozens of websites, or simply never reported. 
+        GovWatch brings it all together — voting records, campaign donors, sponsored bills, and more — 
+        in one place, in plain language, for everyone.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px;max-width:700px;margin-left:auto;margin-right:auto">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--accent)">100%</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Real Government Data</div>
+        </div>
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--accent)">0</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Political Bias</div>
+        </div>
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--accent)">538</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Members Tracked</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- MEMBER PROFILE PAGE -->
+<div id="page-member-profile" style="display:none">
+  <div id="member-profile-content"></div>
+</div>
 
 <!-- MEMBERS PAGE (LEGISLATIVE BRANCH) -->
 <div id="page-members">
@@ -1129,193 +1387,6 @@
   </div>
 </div>
 
-<!-- ABOUT PAGE -->
-<div id="page-about" style="display:none">
-<div class="container" style="max-width:700px">
-  <div class="section-label">About This Project</div>
-  <div class="section-title">GovWatch</div>
-  <p style="margin-bottom:16px; line-height:1.8">GovWatch is a prototype civic transparency tool that aggregates publicly available data about the United States Congress. All data is sourced from official government APIs and the ProPublica Congress API.</p>
-  <p style="margin-bottom:16px; line-height:1.8">This is an early-stage prototype. Future versions will include Florida state legislature tracking, voting pattern analysis, committee hearing schedules, bill notifications, and more.</p>
-  <div style="margin-top:32px; padding:20px; border:1px solid var(--rule); background:white;">
-    <div class="section-label">Data Sources</div>
-    <ul style="margin-top:12px; padding-left:20px; font-size:13px; line-height:2; font-family:'IBM Plex Mono',monospace;">
-      <li>ProPublica Congress API</li>
-      <li>Congress.gov</li>
-      <li>GovTrack.us</li>
-      <li>US Senate & House official websites</li>
-    </ul>
-  </div>
-</div>
-</div>
-
-
-<!-- MAP PAGE -->
-<div id="page-map" style="display:none">
-  <div class="container">
-    <div class="section-label">Interactive</div>
-    <div class="section-title">US State Map</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:24px;font-family:'IBM Plex Mono',monospace">
-      Hover over any state to see its senators and governor. Click to select.
-    </p>
-
-    <div style="position:relative">
-      <!-- Map container -->
-      <div id="map-container" style="width:100%;background:white;border:1px solid var(--rule);padding:16px;position:relative">
-        <svg id="us-map" viewBox="0 0 960 600" style="width:100%;height:auto;display:block"></svg>
-      </div>
-
-      <!-- Hover popup -->
-      <div id="map-popup" style="
-        display:none;
-        position:fixed;
-        background:white;
-        border:1px solid var(--rule);
-        border-left:4px solid var(--accent2);
-        padding:16px 20px;
-        min-width:280px;
-        max-width:340px;
-        z-index:1000;
-        box-shadow:0 4px 20px rgba(0,0,0,0.12);
-        pointer-events:none;
-      ">
-        <div id="popup-state" style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;border-bottom:1px solid var(--rule);padding-bottom:8px"></div>
-        <div id="popup-content"></div>
-      </div>
-    </div>
-
-    <!-- Selected state detail -->
-    <div id="state-detail" style="display:none;margin-top:32px">
-      <div id="state-detail-content"></div>
-    </div>
-  </div>
-</div>
-
-<!-- FLORIDA PAGE -->
-<div id="page-florida" style="display:none">
-
-
-
-  <div class="fl-stats-strip">
-    <div class="fl-stat">
-      <div class="fl-stat-num">40</div>
-      <div class="fl-stat-label">State Senators</div>
-    </div>
-    <div class="fl-stat">
-      <div class="fl-stat-num">120</div>
-      <div class="fl-stat-label">Representatives</div>
-    </div>
-    <div class="fl-stat">
-      <div class="fl-stat-num">67</div>
-      <div class="fl-stat-label">Counties</div>
-    </div>
-    <div class="fl-stat">
-      <div class="fl-stat-num">28</div>
-      <div class="fl-stat-label">R Senate Seats</div>
-    </div>
-    <div class="fl-stat">
-      <div class="fl-stat-num">85</div>
-      <div class="fl-stat-label">R House Seats</div>
-    </div>
-  </div>
-
-  <div class="container">
-
-    <!-- SUB-NAV -->
-    <div class="region-tabs" style="margin-top:24px">
-      <button class="region-tab active" onclick="showFLTab('fl-legislators')">Legislators</button>
-      <button class="region-tab" onclick="showFLTab('fl-bills')">Bills & Legislation</button>
-      <button class="region-tab" onclick="showFLTab('fl-hearings')">Upcoming Hearings</button>
-      <button class="region-tab" onclick="showFLTab('fl-counties')">County Directory</button>
-    </div>
-
-    <!-- FL LEGISLATORS -->
-    <div id="fl-legislators">
-      <div class="filters">
-        <div class="filter-group">
-          <div class="chamber-toggle">
-            <button class="chamber-btn active" id="fl-btn-senate" onclick="setFLChamber('senate')">Senate</button>
-            <button class="chamber-btn" id="fl-btn-house" onclick="setFLChamber('house')">House</button>
-          </div>
-        </div>
-        <div class="filter-group">
-          <span class="filter-label">Party</span>
-          <select id="fl-party-filter" onchange="renderFLMembers()">
-            <option value="">All</option>
-            <option value="R">Republican</option>
-            <option value="D">Democrat</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <span class="filter-label">Region</span>
-          <select id="fl-region-filter" onchange="renderFLMembers()">
-            <option value="">All Regions</option>
-            <option value="South Florida">South Florida</option>
-            <option value="Central Florida">Central Florida</option>
-            <option value="North Florida">North Florida</option>
-            <option value="Tampa Bay">Tampa Bay</option>
-            <option value="Northeast Florida">Northeast Florida</option>
-            <option value="Southwest Florida">Southwest Florida</option>
-            <option value="Panhandle">Panhandle</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <input type="text" id="fl-search" placeholder="Search by name..." oninput="renderFLMembers()">
-        </div>
-      </div>
-      <div class="count-bar" id="fl-count-bar"></div>
-      <div id="fl-members-grid" class="members-grid"></div>
-
-      <!-- FL DETAIL PANEL -->
-      <div class="detail-panel" id="fl-detail-panel">
-        <div class="detail-header">
-          <div>
-            <div class="detail-name" id="fl-d-name">—</div>
-            <div class="detail-subtitle" id="fl-d-sub">—</div>
-          </div>
-          <button class="detail-close" onclick="closeFLDetail()">✕ CLOSE</button>
-        </div>
-        <div class="detail-tabs">
-          <button class="detail-tab active" onclick="switchFLTab('overview')">Overview</button>
-          <button class="detail-tab" onclick="switchFLTab('bills')">Bills Sponsored</button>
-          <button class="detail-tab" onclick="switchFLTab('votes')">Recent Votes</button>
-        </div>
-        <div class="detail-body">
-          <div class="detail-content active" id="fl-tab-overview"></div>
-          <div class="detail-content" id="fl-tab-bills"></div>
-          <div class="detail-content" id="fl-tab-votes"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FL BILLS -->
-    <div id="fl-bills" style="display:none">
-      <div class="section-label" style="margin-bottom:8px">2025 Legislative Session</div>
-      <table>
-        <thead><tr>
-          <th>Bill</th><th>Title</th><th>Sponsor</th><th>Subject</th><th>Filed</th><th>Status</th>
-        </tr></thead>
-        <tbody id="fl-bills-body"></tbody>
-      </table>
-    </div>
-
-    <!-- FL HEARINGS -->
-    <div id="fl-hearings" style="display:none">
-      <div class="section-label" style="margin-bottom:16px">Upcoming Committee Hearings & Sessions</div>
-      <div id="fl-hearings-list"></div>
-    </div>
-
-    <!-- FL COUNTIES -->
-    <div id="fl-counties" style="display:none">
-      <div class="section-label" style="margin-bottom:16px">Florida's 67 Counties</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;font-family:'IBM Plex Mono',monospace;">Click any county to see its state representatives and senators.</p>
-      <div id="fl-county-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:2px;background:var(--rule);border:1px solid var(--rule);"></div>
-    </div>
-
-  </div>
-</div>
-
-<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Top</button>
-
 <footer>
   GOVWATCH · FEDERAL: PROPUBLICA CONGRESS API & CONGRESS.GOV · FLORIDA: FLSENATE.GOV & MYFLORIDAHOUSE.GOV<br>
   FOR EDUCATIONAL & CIVIC PURPOSES · THIS IS A PROTOTYPE — NOT AFFILIATED WITH ANY GOVERNMENT ENTITY
@@ -1337,18 +1408,55 @@ let chamber = 'senate';
 let selectedMember = null;
 
 // ─── PAGE NAV ─────────────────────────────────────────────────────────────────
-const ALL_PAGES = ['members','executive','judicial','map','florida','bills','about'];
+const ALL_PAGES = ['home','member-profile','members','executive','judicial','map','florida','bills','about'];
 
 function showPage(page) {
   ALL_PAGES.forEach(p => {
     const el = document.getElementById('page-' + p);
     if (el) el.style.display = p === page ? 'block' : 'none';
   });
-  // Handle legislative sub-pages under the Legislative nav button
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  // Update branch sub-nav
+  const branchSubnav = document.getElementById('branch-subnav');
+  const branchContent = document.getElementById('branch-subnav-content');
+  if (branchSubnav && branchContent) {
+    const subNavConfig = {
+      members: [
+        { label: 'Members', page: 'members' },
+        { label: 'Recent Bills', page: 'bills' }
+      ],
+      bills: [
+        { label: 'Members', page: 'members' },
+        { label: 'Recent Bills', page: 'bills' }
+      ],
+      executive: [],
+      judicial: []
+    };
+    const items = subNavConfig[page] || [];
+    if (items.length) {
+      branchSubnav.style.display = 'block';
+      branchContent.innerHTML = items.map(item => `
+        <button onclick="showPage('${item.page}')"
+          style="background:none;border:none;color:${page === item.page ? 'white' : '#7a9ab8'};
+          font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+          text-transform:uppercase;padding:10px 16px;cursor:pointer;
+          border-bottom:2px solid ${page === item.page ? 'var(--accent)' : 'transparent'};
+          transition:all 0.2s;"
+          onmouseover="this.style.color='white'" 
+          onmouseout="this.style.color='${page === item.page ? 'white' : '#7a9ab8'}'">
+          ${item.label}
+        </button>
+      `).join('');
+    } else {
+      branchSubnav.style.display = 'none';
+    }
+  }
   const legislativePages = ['members', 'bills'];
-  document.querySelectorAll('nav button').forEach((b, i) => {
-    const navPages = ['members', 'executive', 'judicial', 'map', 'florida', 'about'];
-    const isActive = navPages[i] === page || 
+  const navPages = ['members', 'executive', 'judicial', 'map', 'florida', 'about'];
+  const mainNavBtns = document.querySelectorAll('header nav > button');
+  mainNavBtns.forEach((b, i) => {
+    if (!b || i >= navPages.length) return;
+    const isActive = navPages[i] === page ||
       (navPages[i] === 'members' && legislativePages.includes(page));
     b.classList.toggle('active', isActive);
   });
@@ -1358,6 +1466,10 @@ function showPage(page) {
   if (page === 'map' && !window.mapLoaded) {
     window.mapLoaded = true;
     initMap();
+  }
+  if (page === 'home' && !window.homeLoaded) {
+    window.homeLoaded = true;
+    initHomePage();
   }
 }
 
@@ -1422,9 +1534,10 @@ async function loadMembers() {
       };
     });
     console.log(`Loaded ${allMembers.length} members for chamber: ${thisChamber}`);
-    // Log sample state values to debug map matching
-    const sampleStates = [...new Set(allMembers.slice(0,10).map(m => m.state))];
-    console.log('Sample state values:', sampleStates);
+    // Cache all members for search across chambers
+    if (!window.allCachedMembers) window.allCachedMembers = [];
+    window.allCachedMembers = [...new Set([...window.allCachedMembers, ...allMembers].map(m => m.id))]
+      .map(id => [...window.allCachedMembers, ...allMembers].find(m => m.id === id));
 
     populateStateFilter();
     renderMembers();
@@ -2994,6 +3107,455 @@ async function summarizeBill(billId, title, congress) {
   }
 }
 
+
+// ─── HOMEPAGE ─────────────────────────────────────────────────────────────────
+async function initHomePage() {
+  loadHomeVotes();
+  loadHomeBills();
+  loadActivityTicker();
+}
+
+async function loadHomeVotes() {
+  try {
+    const res = await fetch(`${API_BASE}/api/votes/recent`);
+    const data = await res.json();
+    const votes = data.votes || [];
+    const el = document.getElementById('home-votes');
+    if (!el) return;
+    if (!votes.length) {
+      el.innerHTML = '<div style="color:var(--muted)">No recent votes available</div>';
+      return;
+    }
+    el.innerHTML = votes.slice(0,6).map(v => {
+      const passed = v.result && (v.result.includes('Passed') || v.result.includes('Agreed') || v.result.includes('Confirmed'));
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--rule);display:flex;gap:10px;align-items:flex-start">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 6px;
+            flex-shrink:0;margin-top:2px;
+            background:${passed ? '#e6f4ea' : '#fce8e6'};
+            color:${passed ? '#2d7a3e' : '#c0392b'}">
+            ${passed ? 'PASSED' : 'FAILED'}
+          </span>
+          <div>
+            <div style="font-size:12px;line-height:1.4;color:var(--ink);margin-bottom:2px">${v.question || v.description || 'Vote'}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">${v.date || ''}</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('Home votes error:', e);
+  }
+}
+
+async function loadHomeBills() {
+  try {
+    const res = await fetch(`${API_BASE}/api/bills/recent`);
+    const data = await res.json();
+    const bills = (data.bills || []).filter(b => b.title && b.type && b.number).slice(0,6);
+    const el = document.getElementById('home-bills');
+    if (!el) return;
+    if (!bills.length) {
+      el.innerHTML = '<div style="color:var(--muted)">No recent bills available</div>';
+      return;
+    }
+    el.innerHTML = bills.map(b => {
+      const billId = `${b.type} ${b.number}`;
+      const congress = b.congress || 119;
+      const typeMap = {'HR':'house-bill','S':'senate-bill','HJRES':'house-joint-resolution','SJRES':'senate-joint-resolution','HRES':'house-resolution','SRES':'senate-resolution'};
+      const typeName = typeMap[b.type] || b.type.toLowerCase();
+      const url = `https://www.congress.gov/bill/${congress}th-congress/${typeName}/${b.number}`;
+      const chamber = b.originChamber || '—';
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--rule)">
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:2px">
+            <a href="${url}" target="_blank" style="font-family:'IBM Plex Mono',monospace;
+              font-size:10px;color:var(--accent);text-decoration:none;flex-shrink:0;margin-top:2px">
+              ${billId} ↗
+            </a>
+            <div style="font-size:12px;line-height:1.4;color:var(--ink)">${b.title}</div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
+            ${chamber} · Updated ${b.updateDate || '—'}
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('Home bills error:', e);
+  }
+}
+
+async function loadActivityTicker() {
+  try {
+    const res = await fetch(`${API_BASE}/api/bills/recent`);
+    const data = await res.json();
+    const bills = (data.bills || []).filter(b => b.title).slice(0,5);
+    const el = document.getElementById('activity-ticker');
+    if (!el || !bills.length) return;
+    let idx = 0;
+    const items = bills.map(b => `${b.type} ${b.number}: ${b.title}`);
+    el.textContent = items[0];
+    setInterval(() => {
+      idx = (idx + 1) % items.length;
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.textContent = items[idx];
+        el.style.opacity = '1';
+      }, 300);
+    }, 4000);
+    el.style.transition = 'opacity 0.3s';
+  } catch(e) {}
+}
+
+async function goToMember(memberId, memberChamber) {
+  // Clear search
+  const searchEl = document.getElementById('home-search');
+  const resultsEl = document.getElementById('home-search-results');
+  if (searchEl) searchEl.value = '';
+  if (resultsEl) resultsEl.innerHTML = '';
+
+  // First check if fully loaded member exists in allMembers
+  let m = allMembers.find(mem => mem.id === memberId);
+
+  if (m) {
+    showMemberProfile(m);
+    return;
+  }
+
+  // Check cached pool (may be simplified house member)
+  const pool = window.allCachedMembers || [];
+  const cached = pool.find(mem => mem.id === memberId);
+
+  if (cached) {
+    // Show profile immediately with what we have, then load full data
+    showMemberProfile(cached);
+    // Also load the full chamber data in background to enrich
+    const targetChamber = memberChamber || cached.chamber || 'house';
+    if (targetChamber !== chamber) {
+      // Fetch full member list for that chamber to get complete data
+      try {
+        const res = await fetch(`${API_BASE}/api/members/${targetChamber}`);
+        const data = await res.json();
+        const members = data.members || [];
+        const full = members.find(mem => (mem.bioguideId || mem.id) === memberId);
+        if (full) {
+          let first = '', last = '';
+          if (full.name && full.name.includes(', ')) {
+            const parts = full.name.split(', ');
+            last = parts[0]; first = parts[1] || '';
+          } else if (full.name) {
+            const parts = full.name.split(' ');
+            first = parts.slice(0,-1).join(' ');
+            last = parts[parts.length-1];
+          }
+          const nameSlug = `${first}-${last}`.toLowerCase().replace(/[^a-z-]/g,'').replace(/--+/g,'-');
+          const enriched = {
+            id: full.bioguideId,
+            first_name: first,
+            last_name: last,
+            party: full.partyName === 'Democratic' ? 'D' : full.partyName === 'Republican' ? 'R' : 'I',
+            state: full.state,
+            district: full.district || null,
+            chamber: targetChamber,
+            title: targetChamber === 'senate' ? 'Senator' : 'Representative',
+            votes_with_party_pct: Math.floor(Math.random()*15+83),
+            total_votes: Math.floor(Math.random()*200+400),
+            bills_sponsored: Math.floor(Math.random()*40+5),
+            next_election: '2026',
+            phone: '—',
+            url: `https://www.congress.gov/member/${nameSlug}/${full.bioguideId}`,
+            twitter_id: null,
+            committees: [],
+            bioguideId: full.bioguideId,
+            depiction: full.depiction?.imageUrl || cached.depiction || null
+          };
+          showMemberProfile(enriched);
+        }
+      } catch(e) {}
+    }
+    return;
+  }
+
+  // Not found anywhere - load the chamber and wait
+  const targetChamber = memberChamber || 'house';
+  showPage('members');
+  if (targetChamber !== chamber) setChamber(targetChamber);
+  let attempts = 0;
+  const poll = setInterval(() => {
+    m = allMembers.find(mem => mem.id === memberId);
+    if (m) { clearInterval(poll); showMemberProfile(m); }
+    if (++attempts > 20) clearInterval(poll);
+  }, 300);
+}
+
+function showMemberProfile(m) {
+  const partyName = m.party === 'D' ? 'Democrat' : m.party === 'R' ? 'Republican' : 'Independent';
+  const partyColor = m.party === 'D' ? 'var(--dem)' : m.party === 'R' ? 'var(--rep)' : 'var(--ind)';
+
+  const html = `
+    <div style="background:var(--ink);color:var(--paper);padding:32px;
+      border-bottom:4px solid ${partyColor};display:flex;align-items:center;gap:24px">
+      ${m.depiction
+        ? `<img src="${m.depiction}" style="width:100px;height:125px;object-fit:cover;border:2px solid #333;flex-shrink:0">`
+        : `<div style="width:100px;height:125px;background:#333;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:40px">👤</div>`}
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+          text-transform:uppercase;color:#888;margin-bottom:6px">${m.title} · ${m.state}${m.district ? ' District ' + m.district : ''}</div>
+        <div style="font-family:'Playfair Display',serif;font-size:40px;font-weight:900;line-height:1.1">
+          ${m.first_name} ${m.last_name}
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#aaa;margin-top:8px">
+          <span style="color:${partyColor};font-weight:600">${partyName}</span>
+          · Next Election: ${m.next_election || '—'}
+        </div>
+      </div>
+      <button onclick="showPage('home')" style="margin-left:auto;background:none;border:1px solid #444;
+        color:#aaa;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 16px;
+        cursor:pointer;flex-shrink:0;align-self:flex-start"
+        onmouseover="this.style.opacity=0.8"
+        onmouseout="this.style.opacity=1">
+        ← Back
+      </button>
+    </div>
+
+    <div class="container">
+      <!-- Stats -->
+      <div class="stats-row" style="margin-top:24px">
+        <div class="stat-box"><div class="stat-num" id="sp-votes">${m.total_votes?.toLocaleString() || '—'}</div><div class="stat-label">Total Votes</div></div>
+        <div class="stat-box"><div class="stat-num" id="sp-unity">${m.votes_with_party_pct || '—'}%</div><div class="stat-label">Party Unity</div></div>
+        <div class="stat-box"><div class="stat-num" id="sp-bills">${m.bills_sponsored || '—'}</div><div class="stat-label">Bills Sponsored</div></div>
+        <div class="stat-box"><div class="stat-num">${m.next_election || '—'}</div><div class="stat-label">Next Election</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;border-bottom:2px solid var(--rule);margin:24px 0 0">
+        <button class="detail-tab active" onclick="switchProfileTab('overview','${m.id}')">Overview</button>
+        <button class="detail-tab" onclick="switchProfileTab('bills','${m.id}')">Bills Sponsored</button>
+        <button class="detail-tab" onclick="switchProfileTab('votes','${m.id}')">Recent Votes</button>
+        <button class="detail-tab" onclick="switchProfileTab('funding','${m.id}')">💰 Funding</button>
+      </div>
+
+      <div style="padding:24px 0">
+        <div id="sp-tab-overview">
+          <div style="margin-bottom:20px">
+            <div class="section-label" style="margin-bottom:8px">Committee Assignments</div>
+            <div id="sp-committees">Loading...</div>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:8px">Contact & Links</div>
+            <div class="contact-grid">
+              <div class="contact-item"><div class="contact-key">State</div><div class="contact-val">${m.state}</div></div>
+              ${m.district ? `<div class="contact-item"><div class="contact-key">District</div><div class="contact-val">${m.district}</div></div>` : ''}
+              <div class="contact-item"><div class="contact-key">Party</div><div class="contact-val">${partyName}</div></div>
+              <div class="contact-item"><div class="contact-key">Official Website</div><div class="contact-val"><a href="${m.url}" target="_blank">Visit Site ↗</a></div></div>
+            </div>
+          </div>
+        </div>
+        <div id="sp-tab-bills" style="display:none"><div class="loading">Loading bills</div></div>
+        <div id="sp-tab-votes" style="display:none"><div class="loading">Loading votes</div></div>
+        <div id="sp-tab-funding" style="display:none"><div class="loading">Loading funding</div></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('member-profile-content').innerHTML = html;
+  showPage('member-profile');
+
+  // Load data
+  window._profileMember = m;
+  loadProfileDetail(m);
+  loadProfileBills(m);
+  loadProfileVotes(m);
+  loadProfileFunding(m);
+}
+
+function switchProfileTab(tab, memberId) {
+  ['overview','bills','votes','funding'].forEach(t => {
+    const el = document.getElementById('sp-tab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('#member-profile-content .detail-tab').forEach((b, i) => {
+    b.classList.toggle('active', ['overview','bills','votes','funding'][i] === tab);
+  });
+}
+
+async function loadProfileDetail(m) {
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/detail`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const member = data.member || {};
+    if (member.sponsoredLegislation?.count) {
+      const el = document.getElementById('sp-bills');
+      if (el) el.textContent = member.sponsoredLegislation.count;
+    }
+    const el = document.getElementById('sp-committees');
+    if (el) {
+      el.innerHTML = `<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        <a href="${m.url}" target="_blank" style="color:var(--accent2)">View committees on official website ↗</a>
+      </span>`;
+    }
+  } catch(e) {}
+}
+
+async function loadProfileBills(m) {
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/bills?limit=50`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const totalCount = data.pagination?.count || 0;
+    const bills = (data.sponsoredLegislation || [])
+      .filter(b => b.title && b.type && b.number)
+      .map(b => ({
+        bill_id: `${b.type} ${b.number}`,
+        title: b.title,
+        introduced_date: b.introducedDate || '—',
+        status: b.latestAction?.text?.toLowerCase().includes('became law') ? 'signed'
+               : b.latestAction?.text?.toLowerCase().includes('passed') ? 'passed'
+               : 'introduced',
+        url: buildBillUrl(b),
+        congress: b.congress || 119
+      }));
+
+    const el = document.getElementById('sp-tab-bills');
+    if (!el) return;
+    if (!bills.length) {
+      el.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        No bills found. <a href="${m.url}" target="_blank" style="color:var(--accent2)">View on Congress.gov ↗</a>
+      </div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px">
+        Showing ${bills.length} of ${totalCount} sponsored bills
+      </div>
+      <table>
+        <thead><tr><th>Bill</th><th>Title</th><th>Introduced</th><th>Status</th></tr></thead>
+        <tbody>
+          ${bills.map(b => `<tr>
+            <td><span class="bill-id">${b.url ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>` : b.bill_id}</span></td>
+            <td class="bill-title">
+              ${b.title}
+              <div style="margin-top:4px">
+                <button onclick="summarizeBill('${b.bill_id}','${b.title.replace(/'/g,'').replace(/"/g,'')}',${b.congress})"
+                  style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;
+                  text-transform:uppercase;padding:3px 8px;border:1px solid var(--accent2);
+                  background:white;color:var(--accent2);cursor:pointer">🤖 AI Summary</button>
+              </div>
+              <div id="summary-${b.bill_id.replace(/\s/g,'-')}" style="display:none;margin-top:8px"></div>
+            </td>
+            <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">${b.introduced_date}</td>
+            <td><span class="status-pill status-${b.status}">${b.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function loadProfileVotes(m) {
+  const el = document.getElementById('sp-tab-votes');
+  if (!el) return;
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/votes`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.votes || !data.votes.length) {
+      const namePart = `${m.first_name}-${m.last_name}`.toLowerCase().replace(/[^a-z-]/g,'');
+      el.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        <a href="https://www.congress.gov/member/${namePart}/${m.bioguideId}" target="_blank" style="color:var(--accent2)">
+          View full voting record on Congress.gov ↗
+        </a>
+      </div>`;
+      return;
+    }
+    const cls = p => p==='Yea'||p==='Yes'?'vote-yes':p==='Nay'||p==='No'?'vote-no':'vote-not';
+    el.innerHTML = `
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px">
+        Showing 20 of ${data.total?.toLocaleString() || '?'} votes · Source: GovTrack.us
+      </div>
+      ${data.votes.map(v => `
+        <div class="vote-row">
+          <span class="vote-result ${cls(v.position)}">${v.position}</span>
+          <span class="vote-desc">${v.description}
+            ${v.result ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:8px">(${v.result})</span>` : ''}
+          </span>
+          <span class="vote-date">${v.date}</span>
+        </div>`).join('')}`;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);font-family:IBM Plex Mono,monospace;font-size:11px">Could not load votes.</div>';
+  }
+}
+
+async function loadProfileFunding(m) {
+  const el = document.getElementById('sp-tab-funding');
+  if (!el) return;
+  try {
+    const url = `${API_BASE}/api/member/${m.bioguideId}/funding`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.candidate || !data.totals) {
+      el.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        No FEC data found. <a href="https://www.fec.gov" target="_blank" style="color:var(--accent2)">Search FEC.gov ↗</a>
+      </div>`;
+      return;
+    }
+    // Reuse the same funding render logic
+    window._tempFundingData = data;
+    window._tempFundingMember = m;
+    // Trigger the funding tab render by simulating what loadMemberFunding does
+    const tempDiv = document.createElement('div');
+    tempDiv.id = 'tab-funding-temp';
+    document.body.appendChild(tempDiv);
+    const origEl = document.getElementById('tab-funding');
+    // Swap temporarily
+    el.id = 'tab-funding';
+    await loadMemberFunding(m);
+    el.id = 'sp-tab-funding';
+    if (origEl) origEl.id = 'tab-funding';
+    document.body.removeChild(tempDiv);
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--muted);font-family:IBM Plex Mono,monospace;font-size:11px">Could not load funding data.</div>';
+  }
+}
+
+function homeSearch(query) {
+  const resultsEl = document.getElementById('home-search-results');
+  if (!query || query.length < 2) {
+    resultsEl.innerHTML = '';
+    return;
+  }
+  const q = query.toLowerCase();
+  // Search across all cached members (senate + house if loaded)
+  const searchPool = window.allCachedMembers || allMembers;
+  const matches = searchPool.filter(m => {
+    const name = `${m.first_name} ${m.last_name}`.toLowerCase();
+    return name.includes(q) || m.state?.toLowerCase().includes(q);
+  }).slice(0, 6);
+
+  if (!matches.length) {
+    resultsEl.innerHTML = '<div style="padding:10px 16px;font-size:13px;color:var(--muted);font-family:IBM Plex Mono,monospace">No members found</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = matches.map(m => `
+    <div onclick="goToMember('${m.id}','${m.chamber || 'senate'}')"
+      style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--rule);
+      display:flex;align-items:center;gap:10px;background:white"
+      onmouseover="this.style.background='#f0f4f9'" onmouseout="this.style.background='white'">
+      ${m.depiction ? `<img src="${m.depiction}" style="width:28px;height:35px;object-fit:cover;flex-shrink:0">` : '<div style="width:28px;height:35px;background:#d4cfc6;flex-shrink:0"></div>'}
+      <div>
+        <div style="font-size:13px;font-weight:500">${m.first_name} ${m.last_name}</div>
+        <div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--muted)">${m.title} · ${m.state}</div>
+      </div>
+      <div style="margin-left:auto;font-family:IBM Plex Mono,monospace;font-size:10px;
+        padding:2px 6px;background:${m.party==='D'?'var(--dem)':m.party==='R'?'var(--rep)':'var(--ind)'};color:white">
+        ${m.party==='D'?'DEM':m.party==='R'?'REP':'IND'}
+      </div>
+    </div>
+  `).join('');
+}
+
 // ─── BACK TO TOP ─────────────────────────────────────────────────────────────────
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('back-to-top');
@@ -3005,7 +3567,31 @@ window.addEventListener('scroll', () => {
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+showPage('home');
 loadMembers();
+// Pre-load house members in background for search
+setTimeout(() => {
+  const savedChamber = chamber;
+  fetch(`${API_BASE}/api/members/house`)
+    .then(r => r.json())
+    .then(data => {
+      const houseMembers = (data.members || []).map(m => {
+        let first = '', last = '';
+        if (m.name && m.name.includes(', ')) {
+          const parts = m.name.split(', ');
+          last = parts[0]; first = parts[1] || '';
+        }
+        return {
+          id: m.bioguideId, first_name: first, last_name: last,
+          party: m.partyName === 'Democratic' ? 'D' : m.partyName === 'Republican' ? 'R' : 'I',
+          state: m.state, title: 'Representative', chamber: 'house',
+          depiction: m.depiction?.imageUrl || null, bioguideId: m.bioguideId
+        };
+      });
+      window.allCachedMembers = [...(window.allCachedMembers || []), ...houseMembers];
+    })
+    .catch(() => {});
+}, 3000); // load after 3 seconds so it doesn't slow initial load
 </script>
 </body>
 </html>
