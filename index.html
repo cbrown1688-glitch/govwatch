@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GovWatch — Tracking All Three Branches of the US Government</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -184,15 +187,17 @@
 
   .member-card {
     background: white;
-    padding: 20px;
+    padding: 12px 12px 12px 18px;
     cursor: pointer;
     transition: background 0.15s;
     position: relative;
+    border-bottom: 1px solid var(--rule);
+    box-sizing: border-box;
   }
 
-  .member-card:hover { background: #fafaf8; }
+  .member-card:hover { background: #e8f0fe; }
 
-  .member-card.selected { background: #f0f4f9; }
+  .member-card.selected { background: #dce8fb; border-left: 3px solid var(--accent2); }
 
   .party-bar {
     position: absolute;
@@ -274,6 +279,10 @@
     background: var(--accent2);
     transition: width 0.5s ease;
   }
+
+  .party-fill-D { background: var(--dem) !important; }
+  .party-fill-R { background: var(--rep) !important; }
+  .party-fill-I { background: var(--ind) !important; }
 
   .vote-pct {
     font-family: 'IBM Plex Mono', monospace;
@@ -1410,11 +1419,15 @@ let selectedMember = null;
 // ─── PAGE NAV ─────────────────────────────────────────────────────────────────
 const ALL_PAGES = ['home','member-profile','members','executive','judicial','map','florida','bills','about'];
 
-function showPage(page) {
+function showPage(page, pushState = true) {
   ALL_PAGES.forEach(p => {
     const el = document.getElementById('page-' + p);
     if (el) el.style.display = p === page ? 'block' : 'none';
   });
+  // Push to browser history so back button works
+  if (pushState) {
+    history.pushState({ page }, '', '#' + page);
+  }
   window.scrollTo({top: 0, behavior: 'smooth'});
   // Update branch sub-nav
   const branchSubnav = document.getElementById('branch-subnav');
@@ -1632,22 +1645,29 @@ function renderMembers() {
   grid.innerHTML = filtered.map(m => `
     <div class="member-card ${selectedMember?.id === m.id ? 'selected' : ''}" onclick="selectMember('${m.id}')">
       <div class="party-bar party-${m.party}"></div>
-      <div class="member-header">
-        <div class="member-name">${m.first_name} ${m.last_name}</div>
-        <div class="party-badge badge-${m.party}">${m.party === 'D' ? 'DEM' : m.party === 'R' ? 'REP' : 'IND'}</div>
-      </div>
-      <div class="member-meta">
-        <strong>${m.title}</strong> · ${m.state}${m.district ? '-' + m.district : ''}<br>
-        Next Election: <strong>${m.next_election}</strong><br>
-        Bills Sponsored: <strong>${m.bills_sponsored}</strong>
-      </div>
-      <div class="vote-bar-wrap">
-        <div class="vote-label">Party Unity Score</div>
-        <div class="vote-bar"><div class="vote-fill" style="width:${m.votes_with_party_pct}%"></div></div>
-        <div class="vote-pct">${m.votes_with_party_pct}% votes with party · ${m.total_votes.toLocaleString()} total votes</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding-left:8px">
+        <div style="flex-shrink:0;width:44px;height:55px;background:var(--rule);overflow:hidden;border:1px solid var(--rule)">
+          ${m.depiction ? `<img src="${m.depiction}" style="width:44px;height:55px;object-fit:cover;display:block">` : `<div style="width:44px;height:55px;display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>`}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:2px">
+            <div class="member-name" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.first_name} ${m.last_name}</div>
+            <div class="party-badge badge-${m.party}" style="flex-shrink:0;font-size:9px">${m.party === 'D' ? 'DEM' : m.party === 'R' ? 'REP' : 'IND'}</div>
+          </div>
+          <div class="member-meta" style="margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px">
+            ${m.title} · ${m.state}${m.district ? '-' + m.district : ''} · ${m.next_election}
+          </div>
+          <div class="vote-bar" style="margin-bottom:3px">
+            <div style="height:100%;width:${m.votes_with_party_pct}%;background:${m.party === 'D' ? 'var(--dem)' : m.party === 'R' ? 'var(--rep)' : 'var(--ind)'};transition:width 0.5s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <div class="vote-pct">${m.votes_with_party_pct}% unity</div>
+            <div class="vote-pct">${m.bills_sponsored} bills</div>
+          </div>
+        </div>
       </div>
     </div>
-  `).join('');
+    `).join('');
 }
 
 // ─── SELECT MEMBER ────────────────────────────────────────────────────────────
@@ -1658,11 +1678,17 @@ function selectMember(id) {
   const m = selectedMember;
   console.log('Selected member:', m.first_name, m.last_name, '| id:', m.id, '| bioguideId:', m.bioguideId);
 
+  // Go to dedicated profile page
+  showMemberProfile(m);
+  return;
+
   renderMembers();
   const partyName = m.party === 'D' ? 'Democrat' : m.party === 'R' ? 'Republican' : 'Independent';
   document.getElementById('d-name').textContent = `${m.first_name} ${m.last_name}`;
-  document.getElementById('d-sub').textContent =
-    `${m.title} · ${m.state}${m.district ? ' District ' + m.district : ''} · ${partyName} · Next Election: ${m.next_election}`;
+  document.getElementById('d-sub').innerHTML =
+    `${m.title} · ${m.state}${m.district ? ' District ' + m.district : ''} · 
+    <span style="color:${m.party === 'D' ? 'var(--dem)' : m.party === 'R' ? 'var(--rep)' : 'var(--ind)'};font-weight:600">${partyName}</span>
+    · Next Election: <strong>${m.next_election}</strong>`;
 
   // Overview tab
   const photoHtml = m.depiction
@@ -1673,13 +1699,15 @@ function selectMember(id) {
     : `<div style="width:80px;height:100px;background:var(--rule);margin-right:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--rule)">👤</div>`;
 
   document.getElementById('tab-overview').innerHTML = `
-    <div style="display:flex;align-items:flex-start;margin-bottom:24px">
+    <div style="display:flex;align-items:flex-start;margin-bottom:24px;gap:20px">
       ${photoHtml}
-      <div class="stats-row" style="flex:1;margin-bottom:0">
-        <div class="stat-box"><div class="stat-num">${m.votes_with_party_pct}%</div><div class="stat-label">Party Unity</div></div>
-        <div class="stat-box"><div class="stat-num">${m.total_votes.toLocaleString()}</div><div class="stat-label">Total Votes</div></div>
-        <div class="stat-box"><div class="stat-num">${m.bills_sponsored}</div><div class="stat-label">Bills Sponsored</div></div>
-        <div class="stat-box"><div class="stat-num">${m.next_election}</div><div class="stat-label">Next Election</div></div>
+      <div style="flex:1">
+        <div class="stats-row" style="margin-bottom:16px">
+          <div class="stat-box"><div class="stat-num">${m.votes_with_party_pct}%</div><div class="stat-label">Party Unity</div></div>
+          <div class="stat-box"><div class="stat-num">${m.total_votes.toLocaleString()}</div><div class="stat-label">Total Votes</div></div>
+          <div class="stat-box"><div class="stat-num">${m.bills_sponsored}</div><div class="stat-label">Bills Sponsored</div></div>
+          <div class="stat-box"><div class="stat-num">${m.next_election}</div><div class="stat-label">Next Election</div></div>
+        </div>
       </div>
     </div>
     <div style="margin-bottom:24px">
@@ -3308,12 +3336,12 @@ function showMemberProfile(m) {
           · Next Election: ${m.next_election || '—'}
         </div>
       </div>
-      <button onclick="showPage('home')" style="margin-left:auto;background:none;border:1px solid #444;
+      <button onclick="showPage('members')" style="margin-left:auto;background:none;border:1px solid #444;
         color:#aaa;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 16px;
         cursor:pointer;flex-shrink:0;align-self:flex-start"
         onmouseover="this.style.opacity=0.8"
         onmouseout="this.style.opacity=1">
-        ← Back
+        ← Members
       </button>
     </div>
 
@@ -3559,6 +3587,7 @@ function homeSearch(query) {
 // ─── BACK TO TOP ─────────────────────────────────────────────────────────────────
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('back-to-top');
+  if (!btn) return;
   if (window.scrollY > 300) {
     btn.classList.add('visible');
   } else {
@@ -3567,7 +3596,16 @@ window.addEventListener('scroll', () => {
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-showPage('home');
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (e) => {
+  const page = e.state?.page || 'home';
+  showPage(page, false); // false = don't push another state
+});
+
+// Handle direct URL with hash on load
+const initialPage = window.location.hash.replace('#', '') || 'home';
+showPage(initialPage, false);
+history.replaceState({ page: initialPage }, '', '#' + initialPage);
 loadMembers();
 // Pre-load house members in background for search
 setTimeout(() => {
