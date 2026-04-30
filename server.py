@@ -391,6 +391,75 @@ def search_bills():
         print(f'Bill search error: {e}')
         return jsonify({'bills': [], 'error': str(e)}), 200
 
+@app.route('/api/events/upcoming')
+def get_upcoming_events():
+    try:
+        from datetime import datetime, timedelta
+        today = datetime.now().strftime('%Y-%m-%dT00:00:00Z')
+        future = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%dT00:00:00Z')
+
+        # Fetch committee meetings from Congress.gov
+        url = f'{CONGRESS_BASE}/committee-meeting/{CONGRESS}?fromDateTime={today}&toDateTime={future}&limit=50&api_key={API_KEY}&{FMT}'
+        r = requests.get(url, timeout=TIMEOUT)
+        data = r.json()
+        print(f'Events API status: {r.status_code}, count: {len(data.get("committeeMeetings", []))}')
+
+        meetings = data.get('committeeMeetings', [])
+        events = []
+
+        for m in meetings:
+            date_str = m.get('date', '')
+            if date_str:
+                try:
+                    dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    date = dt.strftime('%Y-%m-%d')
+                    time = dt.strftime('%I:%M %p ET')
+                except:
+                    date = date_str[:10]
+                    time = None
+            else:
+                date = 'TBD'
+                time = None
+
+            chamber = m.get('chamber', '')
+            committee = m.get('committees', [{}])[0].get('name', '') if m.get('committees') else ''
+            title = m.get('title', 'Committee Meeting')
+            location = m.get('location', '')
+            url_link = m.get('url', '')
+
+            # Determine event type
+            title_lower = title.lower()
+            if 'hearing' in title_lower:
+                event_type = 'Hearing'
+            elif 'markup' in title_lower:
+                event_type = 'Markup'
+            elif 'briefing' in title_lower:
+                event_type = 'Briefing'
+            elif 'vote' in title_lower:
+                event_type = 'Vote'
+            else:
+                event_type = 'Meeting'
+
+            events.append({
+                'date': date,
+                'time': time,
+                'title': title,
+                'chamber': chamber,
+                'committee': committee,
+                'location': location,
+                'event_type': event_type,
+                'url': url_link
+            })
+
+        # Sort by date
+        events.sort(key=lambda x: x['date'])
+
+        return jsonify({'events': events, 'total': len(events)})
+
+    except Exception as e:
+        print(f'Events error: {e}')
+        return jsonify({'events': [], 'error': str(e)}), 200
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

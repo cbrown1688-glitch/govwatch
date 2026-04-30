@@ -929,6 +929,25 @@
 
   <div class="container" style="max-width:1200px">
 
+    <!-- UPCOMING EVENTS -->
+    <div style="margin:40px 0 32px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;
+        padding-bottom:12px;border-bottom:2px solid var(--rule);margin-bottom:20px">
+        <div>
+          <div class="section-label" style="margin-bottom:4px">Live Schedule</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700">
+            This Week & Ahead in Congress
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
+          Committee hearings · Floor votes · Markups
+        </div>
+      </div>
+      <div id="upcoming-events">
+        <div class="loading">Loading upcoming events</div>
+      </div>
+    </div>
+
     <!-- THREE BRANCHES -->
     <div style="margin:48px 0 32px">
       <div class="section-label" style="margin-bottom:8px">Explore Government</div>
@@ -3166,11 +3185,146 @@ async function summarizeBill(billId, title, congress, customDivId) {
 }
 
 
+
+// ─── UPCOMING EVENTS ──────────────────────────────────────────────────────────
+async function loadUpcomingEvents() {
+  const el = document.getElementById('upcoming-events');
+  if (!el) return;
+
+  try {
+    // Call Congress.gov directly from browser (server-side calls are blocked)
+    const apiKey = 'JXzprF4VnXjwKyN32rMdItQvdxUmNS5SapCFyTv8';
+    const today = new Date().toISOString().split('T')[0];
+    const future = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
+    
+    // Get list of recent event IDs - fetch 3 pages to get broader coverage
+    const pages = await Promise.all([
+      fetch(`https://api.congress.gov/v3/committee-meeting/119?limit=20&offset=0&api_key=${apiKey}&format=json`).then(r=>r.json()),
+      fetch(`https://api.congress.gov/v3/committee-meeting/119?limit=20&offset=20&api_key=${apiKey}&format=json`).then(r=>r.json()),
+      fetch(`https://api.congress.gov/v3/committee-meeting/119?limit=20&offset=40&api_key=${apiKey}&format=json`).then(r=>r.json()),
+    ]);
+    const meetingRefs = pages.flatMap(p => p.committeeMeetings || []);
+
+    // Fetch full details for all events in parallel
+    const detailPromises = meetingRefs.map(m => {
+      const detailUrl = `https://api.congress.gov/v3/committee-meeting/${m.congress}/${m.chamber.toLowerCase()}/${m.eventId}?api_key=${apiKey}&format=json`;
+      return fetch(detailUrl).then(r => r.json()).then(d => d.committeeMeeting).catch(() => null);
+    });
+    const details = (await Promise.all(detailPromises)).filter(Boolean);
+
+    const events = details.map(m => {
+      const dateStr = m.date || '';
+      let date = 'TBD', time = null;
+      if (dateStr) {
+        try {
+          const dt = new Date(dateStr);
+          date = dt.toISOString().split('T')[0];
+          time = dt.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) + ' ET';
+        } catch(e) { date = dateStr.substring(0,10); }
+      }
+      const committee = m.committees?.[0]?.name || '';
+      const chamber = m.chamber || '';
+      const title = m.title || 'Committee Meeting';
+      const location = m.location ? `${m.location.building || ''} ${m.location.room || ''}`.trim() : '';
+      const eventUrl = m.videos?.[0]?.url || '';
+      const titleLower = title.toLowerCase();
+      const event_type = titleLower.includes('hearing') ? 'Hearing'
+        : titleLower.includes('markup') ? 'Markup'
+        : titleLower.includes('briefing') ? 'Briefing'
+        : 'Meeting';
+      return { date, time, title, chamber, committee, location, event_type, url: eventUrl };
+    }).filter(e => {
+      const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+      const thirtyDaysOut = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
+      return e.date >= sevenDaysAgo && e.date <= thirtyDaysOut;
+    }).sort((a,b) => a.date.localeCompare(b.date));
+
+    if (!events.length) {
+      el.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:16px 0">
+        No upcoming events found. Check back soon.
+      </div>`;
+      return;
+    }
+
+    // Group by date
+    const grouped = {};
+    events.forEach(e => {
+      const date = e.date || 'TBD';
+      if (!grouped[date]) grouped[date] = [];
+      grouped[date].push(e);
+    });
+
+    const chamberIcon = c => c === 'Senate' ? '🔵' : c === 'House' ? '🔴' : '🏛️';
+    const typeIcon = t => {
+      if (!t) return '📋';
+      const tl = t.toLowerCase();
+      if (tl.includes('hearing')) return '🎙️';
+      if (tl.includes('markup')) return '✏️';
+      if (tl.includes('vote')) return '🗳️';
+      if (tl.includes('briefing')) return '📊';
+      return '📋';
+    };
+
+    el.innerHTML = Object.entries(grouped).slice(0, 7).map(([date, evts]) => {
+      const d = new Date(date + 'T12:00:00');
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      let dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      if (d.toDateString() === today.toDateString()) dateLabel = 'Today · ' + dateLabel;
+      else if (d.toDateString() === tomorrow.toDateString()) dateLabel = 'Tomorrow · ' + dateLabel;
+
+      return `
+        <div style="margin-bottom:20px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            text-transform:uppercase;color:var(--accent2);margin-bottom:8px;padding-bottom:4px;
+            border-bottom:1px solid var(--rule)">${dateLabel}</div>
+          ${evts.map(e => `
+            <div style="padding:12px;background:white;border:1px solid var(--rule);
+              margin-bottom:6px;border-left:3px solid ${e.chamber === 'Senate' ? 'var(--dem)' : e.chamber === 'House' ? 'var(--rep)' : 'var(--rule)'}">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <div style="font-size:18px;flex-shrink:0;margin-top:2px">${typeIcon(e.event_type)}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;
+                      text-transform:uppercase;padding:2px 6px;
+                      background:${e.chamber==='Senate'?'#e8f0fe':'#fce8e6'};
+                      color:${e.chamber==='Senate'?'var(--dem)':'var(--rep)'}">${e.event_type}</span>
+                    ${e.time ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">${e.time}</span>` : ''}
+                  </div>
+                  <div style="font-size:13px;font-weight:500;line-height:1.4;margin-bottom:4px">
+                    ${e.title.length > 120 ? e.title.substring(0,120) + '...' : e.title}
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">
+                    ${e.committee ? `<span>${chamberIcon(e.chamber)} ${e.committee}</span>` : ''}
+                    ${e.location ? `<span>📍 ${e.location}</span>` : ''}
+                  </div>
+                </div>
+                ${e.url ? `<a href="${e.url}" target="_blank" style="font-family:'IBM Plex Mono',monospace;
+                  font-size:9px;color:var(--accent2);text-decoration:none;flex-shrink:0;
+                  letter-spacing:0.06em;text-transform:uppercase;padding:4px 8px;border:1px solid var(--accent2)">
+                  Details ↗</a>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.error('Upcoming events error:', e);
+    document.getElementById('upcoming-events').innerHTML = `
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">
+        Could not load upcoming events.
+      </div>`;
+  }
+}
+
 // ─── HOMEPAGE ─────────────────────────────────────────────────────────────────
 async function initHomePage() {
   loadHomeVotes();
   loadHomeBills();
   loadActivityTicker();
+  loadUpcomingEvents();
 }
 
 async function loadHomeVotes() {
