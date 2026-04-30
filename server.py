@@ -362,6 +362,35 @@ Official Summary: {official_summary[:3000] if official_summary else 'Not availab
         print(f'Bill summary error: {e}')
         return jsonify({'success': False, 'error': str(e)}), 200
 
+@app.route('/api/bill/detail/<bill_type>/<bill_number>')
+def get_bill_detail(bill_type, bill_number):
+    try:
+        congress = request.args.get('congress', CONGRESS)
+        url = f'{CONGRESS_BASE}/bill/{congress}/{bill_type.lower()}/{bill_number}?api_key={API_KEY}&{FMT}'
+        r = requests.get(url, timeout=TIMEOUT)
+        data = r.json()
+        if 'bill' not in data:
+            return jsonify({'error': 'Bill not found', 'bill': None}), 200
+        return jsonify({'bill': data['bill']})
+    except Exception as e:
+        print(f'Bill detail error: {e}')
+        return jsonify({'error': str(e), 'bill': None}), 200
+
+@app.route('/api/bills/search')
+def search_bills():
+    try:
+        q = request.args.get('q', '')
+        if not q:
+            return jsonify({'bills': []})
+        url = f'{CONGRESS_BASE}/bill/{CONGRESS}?query={quote(q)}&limit=10&sort=updateDate+desc&api_key={API_KEY}&{FMT}'
+        r = requests.get(url, timeout=TIMEOUT)
+        data = r.json()
+        bills = [b for b in data.get('bills', []) if b.get('title') and b.get('type') and b.get('number')]
+        return jsonify({'bills': bills[:10]})
+    except Exception as e:
+        print(f'Bill search error: {e}')
+        return jsonify({'bills': [], 'error': str(e)}), 200
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

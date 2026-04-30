@@ -1081,6 +1081,10 @@
   </div>
 </div>
 
+<!-- BILL DETAIL PAGE -->
+<div id="page-bill-detail" style="display:none">
+  <div id="bill-detail-content"></div>
+</div>
 
 <!-- MEMBER PROFILE PAGE -->
 <div id="page-member-profile" style="display:none">
@@ -1430,8 +1434,7 @@ let chamber = 'senate';
 let selectedMember = null;
 
 // ─── PAGE NAV ─────────────────────────────────────────────────────────────────
-const ALL_PAGES = ['home','search-results','member-profile','members','executive','judicial','map','florida','bills','about'];
-
+const ALL_PAGES = ['home','search-results','bill-detail','member-profile','members','executive','judicial','map','florida','bills','about'];
 function showPage(page, pushState = true) {
   ALL_PAGES.forEach(p => {
     const el = document.getElementById('page-' + p);
@@ -1915,7 +1918,7 @@ function renderBillsPage() {
       <tbody>
         ${bills.map(b => `<tr>
           <td><span class="bill-id">${b.url
-            ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>`
+            ? `<a href="#" onclick="event.preventDefault();goToBill('${b.type}','${b.number}',${b.congress||119})" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>`
             : b.bill_id}</span></td>
           <td class="bill-title">
             <div>${b.title}</div>
@@ -2104,6 +2107,9 @@ async function loadRecentBills() {
       .filter(b => b.title && b.number && b.type)
       .map(b => ({
         bill_id: `${b.type} ${b.number}`,
+        type: b.type,
+        number: String(b.number),
+        congress: b.congress || 119,
         title: b.title,
         chamber: b.originChamber || '—',
         last_action_date: b.latestAction?.actionDate || '—',
@@ -2153,11 +2159,9 @@ function renderRecentBills(bills) {
           const congress = b.congress || 119;
           const sid = 'srp-' + b.bill_id.replace(/\s/g,'-');
           return `<tr>
-          <td><span class="bill-id">${b.url
-            ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>`
-            : b.bill_id}</span></td>
+          <td><span class="bill-id"><a href="#" onclick="event.preventDefault();goToBill('${b.type}','${b.number}',${b.congress||119})" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a></span></td>
           <td class="bill-title">
-            <div>${b.title}</div>
+            <div style="cursor:pointer" onclick="goToBill('${b.type}','${b.number}',${b.congress||119})">${b.title}</div>
             <div style="margin-top:4px">
               <button onclick="summarizeBill('${b.bill_id}','${safeTitle}',${congress},'${sid}')"
                 style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.08em;
@@ -3228,7 +3232,7 @@ async function loadHomeBills() {
               font-size:10px;color:var(--accent);text-decoration:none;flex-shrink:0;margin-top:2px">
               ${billId} ↗
             </a>
-            <div style="font-size:12px;line-height:1.4;color:var(--ink)">${b.title}</div>
+            <div style="font-size:12px;line-height:1.4;color:var(--ink);cursor:pointer" onclick="goToBill('${b.type}','${b.number}',${b.congress||119})">${b.title}</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
@@ -3497,7 +3501,7 @@ async function loadProfileBills(m) {
         <thead><tr><th>Bill</th><th>Title</th><th>Introduced</th><th>Status</th></tr></thead>
         <tbody>
           ${bills.map(b => `<tr>
-            <td><span class="bill-id">${b.url ? `<a href="${b.url}" target="_blank" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a>` : b.bill_id}</span></td>
+            <td><span class="bill-id"><a href="#" onclick="event.preventDefault();goToBill('${b.bill_id.split(' ')[0]}','${b.bill_id.split(' ')[1]}',${b.congress||119})" style="color:var(--accent);text-decoration:none">${b.bill_id} ↗</a></span></td>
             <td class="bill-title">
               ${b.title}
               <div style="margin-top:4px">
@@ -3585,20 +3589,31 @@ async function loadProfileFunding(m) {
 }
 
 function homeSearchSubmit() {
-  const query = document.getElementById('home-search').value;
+  const query = document.getElementById('home-search').value.trim();
   if (!query || query.length < 2) return;
+  document.getElementById('home-search-results').innerHTML = '';
+
+  // Detect bill number pattern
+  const billMatch = query.match(/^(HR|S|HJRES|SJRES|HRES|SRES|HCONRES|SCONRES)\s*\.?\s*(\d+)$/i);
+  if (billMatch) {
+    goToBill(billMatch[1].toUpperCase(), billMatch[2]);
+    return;
+  }
+
   const q = query.toLowerCase();
   const searchPool = window.allCachedMembers || allMembers;
-  const matches = searchPool.filter(m => {
+  const memberMatches = searchPool.filter(m => {
     const name = `${m.first_name} ${m.last_name}`.toLowerCase();
     return name.includes(q) || m.state?.toLowerCase().includes(q);
   });
-  if (matches.length === 1) {
-    goToMember(matches[0].id, matches[0].chamber);
-  } else if (matches.length > 1) {
-    showSearchResults(query, matches);
+
+  if (memberMatches.length === 1) {
+    goToMember(memberMatches[0].id, memberMatches[0].chamber);
+  } else if (memberMatches.length > 1) {
+    showSearchResults(query, memberMatches);
+  } else {
+    searchBills(query);
   }
-  document.getElementById('home-search-results').innerHTML = '';
 }
 
 function showSearchResults(query, matches) {
@@ -3743,6 +3758,182 @@ setTimeout(() => {
     })
     .catch(() => {});
 }, 3000); // load after 3 seconds so it doesn't slow initial load
+
+// ─── BILL DETAIL ──────────────────────────────────────────────────────────────
+async function goToBill(billType, billNumber, congress) {
+  congress = congress || 119;
+  const searchEl = document.getElementById('home-search');
+  const resultsEl = document.getElementById('home-search-results');
+  if (searchEl) searchEl.value = '';
+  if (resultsEl) resultsEl.innerHTML = '';
+
+  document.getElementById('bill-detail-content').innerHTML = `
+    <div style="background:var(--ink);color:var(--paper);padding:48px 32px;border-bottom:4px solid var(--accent)">
+      <button onclick="history.back()" style="background:none;border:1px solid #444;color:#aaa;
+        font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 16px;cursor:pointer;margin-bottom:24px">
+        ← Back
+      </button>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#888">Loading bill details...</div>
+    </div>`;
+  showPage('bill-detail');
+
+  try {
+    const res = await fetch(`/api/bill/detail/${billType}/${billNumber}?congress=${congress}`);
+    const data = await res.json();
+    if (data.error || !data.bill) {
+      document.getElementById('bill-detail-content').innerHTML = `
+        <div style="background:var(--ink);color:var(--paper);padding:48px 32px;border-bottom:4px solid var(--accent)">
+          <button onclick="history.back()" style="background:none;border:1px solid #444;color:#aaa;
+            font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 16px;cursor:pointer;margin-bottom:24px">
+            ← Back
+          </button>
+          <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700">Bill not found</div>
+        </div>`;
+      return;
+    }
+    renderBillDetail(data.bill, billType, billNumber, congress);
+  } catch(e) {
+    console.error('Bill detail error:', e);
+  }
+}
+
+function renderBillDetail(bill, billType, billNumber, congress) {
+  const typeMap = {
+    'HR':'house-bill','S':'senate-bill','HJRES':'house-joint-resolution',
+    'SJRES':'senate-joint-resolution','HRES':'house-resolution','SRES':'senate-resolution'
+  };
+  const typeName = typeMap[billType] || billType.toLowerCase();
+  const congressUrl = `https://www.congress.gov/bill/${congress}th-congress/${typeName}/${billNumber}`;
+  const title = bill.title || `${billType} ${billNumber}`;
+  const sponsor = bill.sponsors?.[0] || {};
+  const sponsorName = sponsor.fullName || `${sponsor.firstName || ''} ${sponsor.lastName || ''}`.trim();
+  const sponsorBioguide = sponsor.bioguideId;
+  const latestAction = bill.latestAction?.text || '—';
+  const latestDate = bill.latestAction?.actionDate || '—';
+  const policyArea = bill.policyArea?.name || '—';
+  const introducedDate = bill.introducedDate || '—';
+  const cosponsors = bill.cosponsors?.count || 0;
+  const committees = bill.committees?.count || 0;
+  const actions = bill.actions?.count || 0;
+  const statusText = latestAction.toLowerCase();
+  const status = statusText.includes('became law') || statusText.includes('signed by president') ? 'signed'
+    : statusText.includes('passed') ? 'passed'
+    : statusText.includes('failed') || statusText.includes('defeated') ? 'failed'
+    : 'introduced';
+  const statusColor = status === 'signed' ? '#2d7a3e' : status === 'passed' ? '#1a55a0' : status === 'failed' ? '#c0392b' : '#8a5a00';
+  const safeTitle = title.replace(/'/g,'').replace(/"/g,'');
+  const summaryId = 'bill-detail-summary';
+
+  document.getElementById('bill-detail-content').innerHTML = `
+    <div style="background:var(--ink);color:var(--paper);padding:40px 32px;border-bottom:4px solid var(--accent)">
+      <button onclick="history.back()" style="background:none;border:1px solid #444;color:#aaa;
+        font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 16px;cursor:pointer;margin-bottom:20px">
+        ← Back
+      </button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;
+            text-transform:uppercase;color:#888;margin-bottom:8px">
+            ${billType} ${billNumber} · 119th Congress · ${policyArea}
+          </div>
+          <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;
+            line-height:1.2;max-width:800px;margin-bottom:16px">${title}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#aaa">
+            Introduced ${introducedDate}
+            ${sponsorName ? ` · Sponsored by <a href="#" onclick="event.preventDefault();${sponsorBioguide ? `goToMember('${sponsorBioguide}','senate')` : ''}" style="color:var(--accent)">${sponsorName}</a>` : ''}
+          </div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;
+          background:${statusColor};color:white;flex-shrink:0;align-self:flex-start">
+          ${status.toUpperCase()}
+        </span>
+      </div>
+    </div>
+    <div class="container" style="max-width:900px;padding-top:32px">
+      <div class="stats-row" style="margin-bottom:32px">
+        <div class="stat-box"><div class="stat-num">${cosponsors}</div><div class="stat-label">Co-sponsors</div></div>
+        <div class="stat-box"><div class="stat-num">${committees}</div><div class="stat-label">Committees</div></div>
+        <div class="stat-box"><div class="stat-num">${actions}</div><div class="stat-label">Actions</div></div>
+        <div class="stat-box"><div class="stat-num" style="font-size:14px">${latestDate}</div><div class="stat-label">Last Action</div></div>
+      </div>
+      <div style="border:1px solid var(--rule);padding:16px;background:#fafaf8;margin-bottom:24px">
+        <div class="section-label" style="margin-bottom:6px">Latest Action</div>
+        <div style="font-size:13px;line-height:1.6">${latestAction}</div>
+      </div>
+      <div style="margin-bottom:32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+          padding-bottom:12px;border-bottom:2px solid var(--rule);margin-bottom:16px">
+          <div>
+            <div class="section-label" style="margin-bottom:2px">AI Analysis</div>
+            <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700">
+              What Does This Bill Actually Do?
+            </div>
+          </div>
+          <button onclick="summarizeBill('${billType} ${billNumber}','${safeTitle}',${congress},'${summaryId}')"
+            style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+            text-transform:uppercase;padding:10px 20px;border:none;
+            background:var(--accent2);color:white;cursor:pointer;flex-shrink:0">
+            🤖 Generate AI Summary
+          </button>
+        </div>
+        <div id="${summaryId}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+            padding:20px;background:#f8f7f4;border-left:3px solid var(--rule);line-height:1.8">
+            Click "Generate AI Summary" for a plain English breakdown of this bill.
+            <br><br>
+            <span style="color:var(--accent2)">Free users see a teaser · Full analysis requires a GovWatch subscription</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:32px">
+        <div class="section-label" style="margin-bottom:12px">Official Sources</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="${congressUrl}" target="_blank" style="font-family:'IBM Plex Mono',monospace;
+            font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:10px 20px;
+            border:1px solid var(--rule);background:white;color:var(--ink);text-decoration:none">
+            View on Congress.gov ↗
+          </a>
+          <a href="https://www.govtrack.us/congress/bills/${congress}/${billType.toLowerCase()}${billNumber}" 
+            target="_blank" style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+            letter-spacing:0.08em;text-transform:uppercase;padding:10px 20px;
+            border:1px solid var(--rule);background:white;color:var(--ink);text-decoration:none">
+            View on GovTrack ↗
+          </a>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function searchBills(query) {
+  try {
+    const res = await fetch(`/api/bills/search?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    const bills = data.bills || [];
+    const el = document.getElementById('search-results-content');
+    if (!el) return;
+    el.innerHTML = `
+      <div style="margin-bottom:24px">
+        <div class="section-label" style="margin-bottom:4px">Bill Search Results</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700">
+          "${query}" <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:400;color:var(--muted)">${bills.length} bills found</span>
+        </div>
+      </div>
+      ${!bills.length ? '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--muted)">No bills found. Try a bill number like "S 138" or "HR 1234"</div>' :
+        bills.map(b => `
+          <div style="border:1px solid var(--rule);padding:16px;background:white;margin-bottom:8px;cursor:pointer"
+            onclick="goToBill('${b.type}','${b.number}',${b.congress || 119})"
+            onmouseover="this.style.background='#f0f4f9'" onmouseout="this.style.background='white'">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px">${b.type} ${b.number}</div>
+            <div style="font-size:14px;font-weight:500;line-height:1.4;margin-bottom:4px">${b.title}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
+              ${(b.latestAction?.text || '').substring(0,100)}...
+            </div>
+          </div>`).join('')}`;
+    showPage('search-results');
+  } catch(e) {
+    console.error('Bill search error:', e);
+  }
+}
 </script>
 </body>
 </html>
